@@ -27,7 +27,7 @@ public class MatchingEngine {
         while(!oppositeSide.isEmpty() && incoming.quantity > 0){
             //melhor preço disponível no lado oposto (prioridade de preço)
             long bestOppositePrice = oppositeSide.firstKey();
-            //verifica se o preço é compatível para negócio
+            //verifica se o preço é compatível para negócio (com operador ternário)
             boolean canMatch = (incoming.side == Side.BUY) ?
                                 incoming.price >= bestOppositePrice : //ex: compra por 10 o que custa 9
                                 incoming.price <= bestOppositePrice;  //ex: vende por 10 o que vale 11
