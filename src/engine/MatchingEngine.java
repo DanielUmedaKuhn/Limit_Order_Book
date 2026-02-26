@@ -1,22 +1,28 @@
 package engine;
 import model.Order;
+import model.Trade;
 import enums.Side;
-import java.util.TreeMap;
-import java.util.LinkedList;
+import java.util.*;
 
 public class MatchingEngine {
     private final OrderBook book = new OrderBook();
 
-    public void submitOrder(Order incoming){
+    public List<Trade> submitOrder(Order incoming){
+        List<Trade> trades = new ArrayList<>();
         if(incoming.side == Side.BUY){
-            match(incoming, book.asks, book.bids);
+            match(incoming, book.asks, trades);
         }
         else{
-            match(incoming, book.bids, book.asks);
+            match(incoming, book.bids, trades);
         }
+
+        if(incoming.quantity > 0){
+            book.addOrder(incoming);
+        }
+        return trades;
     }
 
-    private void match(Order incoming, TreeMap<Long, LinkedList<Order>> oppositeSide, TreeMap<Long, LinkedList<Order>> ownBook){
+    private void match(Order incoming, TreeMap<Long, LinkedList<Order>> oppositeSide, List<Trade> trades){
         //enquanto houver ordens do lado oposto e a ordem atual ainda tiver quantidade
         while(!oppositeSide.isEmpty() && incoming.quantity > 0){
             //melhor preço disponível no lado oposto (prioridade de preço)
@@ -35,7 +41,7 @@ public class MatchingEngine {
             while(!ordersAtLevel.isEmpty() && incoming.quantity > 0){
                 Order restingOrder = ordersAtLevel.peekFirst();
                 int matchQuantity = Math.min(incoming.quantity, restingOrder.quantity);
-                executeTrade(incoming, restingOrder, matchQuantity, bestOppositePrice);
+                trades.add(createTrade(incoming, restingOrder, matchQuantity, bestOppositePrice));
 
                 incoming.quantity -= matchQuantity;
                 restingOrder.quantity -= matchQuantity;
@@ -49,25 +55,12 @@ public class MatchingEngine {
 
             }
         }
-        if(incoming.quantity > 0){
-            book.addOrder(incoming);
-        }
     }
-    private void executeTrade(Order incoming, Order resting, int quantity, long price){
-        long buyerId;
-        long sellerId;
+    private Trade createTrade(Order incoming, Order resting, int quantity, long price){
+        long buyerId = (incoming.side == Side.BUY) ? incoming.id : resting.id;
+        long sellerId = (incoming.side == Side.SELL) ? incoming.id : resting.id;
 
-        if(incoming.side == Side.BUY){
-            buyerId = incoming.id;
-            sellerId = resting.id;
-        }
-        else {
-            buyerId = resting.id;
-            sellerId = incoming.id;
-        }
-        System.out.println("[TRADE] Quantidade: " + quantity +
-                           " | Preço: " + price +
-                           " | Comprador (ID): " + buyerId +
-                           " | Vendedor (ID): " + sellerId);
+        return new Trade(buyerId, sellerId, quantity, price);
+
     }
 }
