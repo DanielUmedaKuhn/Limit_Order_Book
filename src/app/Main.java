@@ -12,20 +12,25 @@ public class Main {
 
         System.out.println("Simulando.\n");
 
-        //2 vendedores entram no livro
+        //vendedor entra no livro
         engine.submitOrder(new Order(1, 100, 10, Side.SELL));
-        engine.submitOrder(new Order(2, 100, 10, Side.SELL));
-        engine.submitOrder(new Order(3, 100, 10, Side.SELL));
+        System.out.println("Comprador ID 1 postou 10 unidades a %100.\n");
 
-        System.out.println("Comprador ID 4 quer comprar 15 unidades.\nComprador ID 5 quer comprar 10 unidades. \n");
+        System.out.println("Vendedor ID 1 solicitou cancelamento...\n");
+        boolean cancelado = engine.cancelOrder(1);
+        if (cancelado){
+            System.out.println("Order 1 removida com sucesso.\n");
+        }
+        else{
+            System.out.println("Falha ao cancelar, order não encontrada ou já executada.");
+        }
 
-        //comprador compra de ambos
-        Order orderCompra1 = new Order(4, 100, 15, Side.BUY);
-        resultados.addAll(engine.submitOrder(orderCompra1));
-
-        //outra compra
-        Order orderCompra2 = new Order(5, 100, 5, Side.BUY);
-        resultados.addAll(engine.submitOrder(orderCompra2));
+        //comprador tenta comprar o que já foi cancelado
+        Order compra = new Order(2, 100, 10, Side.BUY);
+        List<Trade> result = engine.submitOrder(compra);
+        if(result.isEmpty()){
+            System.out.println("Comprador ID 2 não encontrou vendedor (funcionou).");
+        }
 
         System.out.println("Pedido processado. Resumo de execuções: ");
         for (Trade t : resultados) {
