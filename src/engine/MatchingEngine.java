@@ -1,4 +1,5 @@
 package engine;
+import enums.OrderType;
 import model.Order;
 import model.Trade;
 import enums.Side;
@@ -12,6 +13,7 @@ public class MatchingEngine {
     public List<Trade> submitOrder(Order incoming) {
         //início da região crítica
         lock.lock();
+        long startTime = System.nanoTime();
         try {
             List<Trade> trades = new ArrayList<>();
             if (incoming.side == Side.BUY) {
@@ -20,9 +22,14 @@ public class MatchingEngine {
                 match(incoming, book.bids, trades);
             }
 
-            if (incoming.quantity > 0) {
+            //apenas orders limit com saldo vão para o livro, orders market não executadas são canceladas
+            if (incoming.quantity > 0 && incoming.type ==  OrderType.LIMIT) {
                 book.addOrder(incoming);
             }
+
+            long endTime = System.nanoTime();
+            System.out.println("Latência: " + (endTime - startTime) / 1000 + "µs\n");
+
             return trades;
         }
         finally {
@@ -61,9 +68,9 @@ public class MatchingEngine {
         while(!oppositeSide.isEmpty() && incoming.quantity > 0){
             //melhor preço disponível no lado oposto (prioridade de preço)
             long bestOppositePrice = oppositeSide.firstKey();
-            boolean canMatch = (incoming.side == Side.BUY) ?
-                    incoming.price >= bestOppositePrice : //ex: compra por 10 o que custa 9
-                    incoming.price <= bestOppositePrice;  //ex: vende por 10 o que vale 11
+            boolean canMatch = (incoming.type == OrderType.MARKET) || (incoming.side == Side.BUY) ?
+                                                                       incoming.price >= bestOppositePrice : //ex: compra por 10 o que custa 9
+                                                                       incoming.price <= bestOppositePrice;  //ex: vende por 10 o que vale 11
 
             if(!canMatch){
                 break; //se o melhor preço não serve, nenhum servirá

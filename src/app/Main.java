@@ -3,6 +3,7 @@ import engine.MatchingEngine;
 import model.Order;
 import model.Trade;
 import enums.Side;
+import enums.OrderType;
 import java.util.*;
 
 public class Main {
@@ -13,26 +14,22 @@ public class Main {
         System.out.println("Simulando.\n");
 
         //vendedor entra no livro
-        engine.submitOrder(new Order(1, 100, 10, Side.SELL));
-        System.out.println("Comprador ID 1 postou 10 unidades a %100.\n");
+        engine.submitOrder(new Order(1, 100, 10, Side.SELL, OrderType.LIMIT));
+        engine.submitOrder(new Order(2, 100, 10, Side.SELL, OrderType.LIMIT));
+        engine.submitOrder(new Order(3, 100, 10, Side.SELL, OrderType.LIMIT));
 
-        System.out.println("Vendedor ID 1 solicitou cancelamento...\n");
-        boolean cancelado = engine.cancelOrder(1);
-        if (cancelado){
-            System.out.println("Order 1 removida com sucesso.\n");
-        }
-        else{
-            System.out.println("Falha ao cancelar, order não encontrada ou já executada.");
-        }
+        System.out.println("Cancelando vendedor ID 3...");
+        engine.cancelOrder(3);
+
+        System.out.println("Comprador ID 4 envia MARKET ORDER (15 unidades)...");
+        Order marketBuy = new Order(4, 0, 15, Side.BUY, OrderType.MARKET);
+        resultados.addAll(engine.submitOrder(marketBuy));
 
         //comprador tenta comprar o que já foi cancelado
-        Order compra = new Order(2, 100, 10, Side.BUY);
-        List<Trade> result = engine.submitOrder(compra);
-        if(result.isEmpty()){
-            System.out.println("Comprador ID 2 não encontrou vendedor (funcionou).");
-        }
+        System.out.println("Comprador ID 5 envia LIMIT ORDER (90$) - Aguardando...");
+        engine.submitOrder(new Order(5, 90, 5, Side.BUY, OrderType.LIMIT));
 
-        System.out.println("Pedido processado. Resumo de execuções: ");
+        System.out.println("Pedidos processados. Resumo de execuções: ");
         for (Trade t : resultados) {
             System.out.println(t);
         }
