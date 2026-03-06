@@ -68,9 +68,9 @@ public class MatchingEngine {
         while(!oppositeSide.isEmpty() && incoming.quantity > 0){
             //melhor preço disponível no lado oposto (prioridade de preço)
             long bestOppositePrice = oppositeSide.firstKey();
-            boolean canMatch = (incoming.type == OrderType.MARKET) || (incoming.side == Side.BUY) ?
+            boolean canMatch = (incoming.type == OrderType.MARKET) || (incoming.side == Side.BUY ?
                                                                        incoming.price >= bestOppositePrice : //ex: compra por 10 o que custa 9
-                                                                       incoming.price <= bestOppositePrice;  //ex: vende por 10 o que vale 11
+                                                                       incoming.price <= bestOppositePrice);  //ex: vende por 10 o que vale 11
 
             if(!canMatch){
                 break; //se o melhor preço não serve, nenhum servirá
