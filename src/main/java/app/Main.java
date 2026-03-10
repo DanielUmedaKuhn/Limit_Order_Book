@@ -4,14 +4,15 @@ import model.Order;
 import model.Trade;
 import enums.Side;
 import enums.OrderType;
+import database.DatabaseConfig;
 import java.util.*;
 
 public class Main {
     public static void main(String[] args) {
+        System.out.println("Simulando.\n");
+        DatabaseConfig.initializeDatabase();
         MatchingEngine engine = new MatchingEngine();
         List<Trade> resultados = new ArrayList<>();
-
-        System.out.println("Simulando.\n");
 
         //vendedor entra no livro
         engine.submitOrder(new Order(1, 100, 10, Side.SELL, OrderType.LIMIT));
