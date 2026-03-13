@@ -3,24 +3,29 @@ import enums.OrderType;
 import model.Order;
 import model.Trade;
 import enums.Side;
+import database.OrderDAO;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class MatchingEngine {
     private final OrderBook book = new OrderBook();
     private final ReentrantLock lock = new ReentrantLock();  //Controla concorrência
+    private final OrderDAO orderDAO = new OrderDAO();
 
     public List<Trade> submitOrder(Order incoming) {
         //início da região crítica
         lock.lock();
         long startTime = System.nanoTime();
         try {
+            orderDAO.save(incoming);
             List<Trade> trades = new ArrayList<>();
             if (incoming.side == Side.BUY) {
                 match(incoming, book.asks, trades);
             } else {
                 match(incoming, book.bids, trades);
             }
+
+            orderDAO.update(incoming);
 
             //apenas orders limit com saldo vão para o livro, orders market não executadas são canceladas
             if (incoming.quantity > 0 && incoming.type ==  OrderType.LIMIT) {

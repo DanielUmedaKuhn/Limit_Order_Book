@@ -9,11 +9,11 @@ public class Order {
     public final Side side;
     public final OrderType type;
 
-    public Order(long id, long price, int quantity, Side side,  OrderType type){
+    public Order(long id, long price, int initialQuantity, int currentQuantity, Side side, OrderType type){
         this.id = id;
         this.price = price;
-        this.initialQuantity = quantity;
-        this.quantity = quantity;
+        this.initialQuantity = initialQuantity;
+        this.quantity = currentQuantity;
         this.side = side;
         this.type = type;
     }

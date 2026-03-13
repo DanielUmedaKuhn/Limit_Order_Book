@@ -21,7 +21,7 @@ public class PerformanceStressTest {
             executor.submit(() -> {
                 for(int j = 0; j < ordersPerThread; j++){
                     long id = (threadId * ordersPerThread) + j;
-                    Order order = new Order(id, 100, 1, Side.BUY, OrderType.LIMIT);
+                    Order order = new Order(id, 100, 1, 1, Side.BUY, OrderType.LIMIT);
 
                     long start = System.nanoTime();
                     engine.submitOrder(order);
