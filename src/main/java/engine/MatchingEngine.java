@@ -4,6 +4,7 @@ import model.Order;
 import model.Trade;
 import enums.Side;
 import database.OrderDAO;
+import database.TradeDAO;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -11,6 +12,24 @@ public class MatchingEngine {
     private final OrderBook book = new OrderBook();
     private final ReentrantLock lock = new ReentrantLock();  //Controla concorrência
     private final OrderDAO orderDAO = new OrderDAO();
+    private final TradeDAO tradeDAO = new TradeDAO();
+
+    public void rebuildBookFromDatabase(){
+        lock.lock();
+        try{
+            System.out.println("[CORE] Carregando orders abertas do banco de dados...");
+            List<Order> openOrders = orderDAO.findAllOpen();
+
+            for(Order order : openOrders){
+                book.addOrder(order);
+            }
+
+            System.out.println("[CORE] Recuperação concluída. " + openOrders.size() + " orders em memória.");
+        }
+        finally{
+            lock.unlock();
+        }
+    }
 
     public List<Trade> submitOrder(Order incoming) {
         //início da região crítica
@@ -87,10 +106,13 @@ public class MatchingEngine {
                 Order restingOrder = ordersAtLevel.peekFirst();
                 int matchQuantity = Math.min(incoming.quantity, restingOrder.quantity);
 
-                trades.add(createTrade(incoming, restingOrder, matchQuantity, bestOppositePrice));
+                Trade trade = createTrade(incoming, restingOrder, matchQuantity, bestOppositePrice);
+                trades.add(trade);
+                tradeDAO.save(trade);
 
                 incoming.quantity -= matchQuantity;
                 restingOrder.quantity -= matchQuantity;
+                orderDAO.update(restingOrder);  //Atualiza saldo da order que estava no livro no banco
 
                 if(restingOrder.quantity == 0){
                     ordersAtLevel.removeFirst();

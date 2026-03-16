@@ -11,13 +11,17 @@ public class Main {
     public static void main(String[] args) {
         System.out.println("Simulando.\n");
         DatabaseConfig.initializeDatabase();
-        model.Order testOrder = new model.Order(101, 150, 10, 10, enums.Side.BUY, enums.OrderType.LIMIT);
-        database.OrderDAO dao = new database.OrderDAO();
-        dao.save(testOrder);
-        System.out.println("Order de teste enviada ao banco");
+        MatchingEngine engine = new MatchingEngine();
+        engine.rebuildBookFromDatabase();  //Carrega o que estava no banco para a RAM
 
-        testOrder.quantity = 5;
-        dao.update(testOrder);
-        System.out.println("order de teste atualizada no banco.");
+        long id1 = System.currentTimeMillis();
+        //engine.submitOrder(new Order(id1, 100, 10, 10, Side.SELL,OrderType.LIMIT));
+
+        long id2 = System.currentTimeMillis();
+        //engine.submitOrder(new Order(id2, 110, 5, 5, Side.SELL, OrderType.LIMIT));
+
+        long id3 = System.currentTimeMillis();
+        engine.submitOrder(new Order(id3, 100, 10, 10, Side.BUY, OrderType.LIMIT));
+        System.out.print("Orders enviadas. Verifique o banco de dados e feche o programa.");
     }
 }
