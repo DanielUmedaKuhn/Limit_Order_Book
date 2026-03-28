@@ -44,6 +44,7 @@ public class MatchingEngine {
         lock.lock();
         long startTime = System.nanoTime();
         try {
+            metrics.MetricsRegistry.totalOrders.increment();
             dbWorker.enqueue(new PersistenceTask(PersistenceTask.Type.SAVE_ORDER, incoming, null));
 
             List<Trade> trades = new ArrayList<>();
@@ -62,6 +63,10 @@ public class MatchingEngine {
 
             long endTime = System.nanoTime();
             System.out.println("Latência: " + (endTime - startTime) / 1000 + "µs\n");
+            long latencyMicros = (endTime - startTime) / 1000;
+
+            metrics.MetricsRegistry.recordLatency(latencyMicros);
+            metrics.MetricsRegistry.totalTrades.add(trades.size());
 
             return trades;
         }
