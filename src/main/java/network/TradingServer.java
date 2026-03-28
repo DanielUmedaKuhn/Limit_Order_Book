@@ -1,11 +1,14 @@
 package network;
 import engine.MatchingEngine;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.io.*;
 import java.net.*;
 
 public class TradingServer {
     private final int port;
     private final MatchingEngine engine;
+    private final ExecutorService threadPool = Executors.newFixedThreadPool(10);
 
     public TradingServer(int port, MatchingEngine engine){
         this.port = port;
@@ -20,7 +23,7 @@ public class TradingServer {
                 //servidor espera alguém conectar
                 Socket clientSocket = serverSocket.accept();
                 System.out.println("[SERVER] Novo cliente conectado: " + clientSocket.getInetAddress());
-                handleClient(clientSocket);
+                threadPool.execute(() -> handleClient(clientSocket));  //joga handleClient para a pool de threads
             }
         }
         catch(IOException e){

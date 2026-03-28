@@ -4,7 +4,8 @@ import model.Order;
 import model.Trade;
 import enums.Side;
 import database.OrderDAO;
-import database.TradeDAO;
+import database.PersistenceTask;
+import database.PersistenceWorker;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -12,7 +13,14 @@ public class MatchingEngine {
     private final OrderBook book = new OrderBook();
     private final ReentrantLock lock = new ReentrantLock();  //Controla concorrência
     private final OrderDAO orderDAO = new OrderDAO();
-    private final TradeDAO tradeDAO = new TradeDAO();
+    private final PersistenceWorker dbWorker = new PersistenceWorker();
+
+    public MatchingEngine(){
+        Thread t = new Thread(dbWorker);
+        t.setName("DB-Persistence_Thread");
+        t.setDaemon(true);
+        t.start();
+    }
 
     public void rebuildBookFromDatabase(){
         lock.lock();
@@ -36,7 +44,8 @@ public class MatchingEngine {
         lock.lock();
         long startTime = System.nanoTime();
         try {
-            orderDAO.save(incoming);
+            dbWorker.enqueue(new PersistenceTask(PersistenceTask.Type.SAVE_ORDER, incoming, null));
+
             List<Trade> trades = new ArrayList<>();
             if (incoming.side == Side.BUY) {
                 match(incoming, book.asks, trades);
@@ -44,7 +53,7 @@ public class MatchingEngine {
                 match(incoming, book.bids, trades);
             }
 
-            orderDAO.update(incoming);
+            dbWorker.enqueue(new PersistenceTask(PersistenceTask.Type.UPDATE_ORDER,incoming, null));
 
             //apenas orders limit com saldo vão para o livro, orders market não executadas são canceladas
             if (incoming.quantity > 0 && incoming.type ==  OrderType.LIMIT) {
@@ -81,6 +90,8 @@ public class MatchingEngine {
             }
 
             book.removeOrderFromId(orderId);  //libera memória ao remover do mapa de IDs
+
+            dbWorker.enqueue(new PersistenceTask(PersistenceTask.Type.UPDATE_ORDER, order, null));
             return true;
         }
         finally{
@@ -108,12 +119,13 @@ public class MatchingEngine {
 
                 Trade trade = createTrade(incoming, restingOrder, matchQuantity, bestOppositePrice);
                 trades.add(trade);
-                tradeDAO.save(trade);
+
+                dbWorker.enqueue(new PersistenceTask(PersistenceTask.Type.SAVE_TRADE, null, trade));
 
                 incoming.quantity -= matchQuantity;
                 restingOrder.quantity -= matchQuantity;
-                orderDAO.update(restingOrder);  //Atualiza saldo da order que estava no livro no banco
 
+                dbWorker.enqueue(new PersistenceTask(PersistenceTask.Type.UPDATE_ORDER, restingOrder,null));
                 if(restingOrder.quantity == 0){
                     ordersAtLevel.removeFirst();
                     book.removeOrderFromId(restingOrder.id);  //se a order acabou, é removida do mapa de IDs
