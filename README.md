@@ -1,11 +1,11 @@
-# NexusTrade: High-Performance Matching Engine in Java
+# High-Performance Matching Engine in Java
 
 Este projeto consiste em um motor de negociação (Matching Engine) de baixa latência capaz de processar milhares de ordens por segundo. O sistema implementa um Limit Order Book (LOB) completo, com persistência assíncrona, conectividade via rede e telemetria em tempo real.
 
 ## Destaques de Performance
 
 * **Latência em Memória:** ~2-7µs.
-* **Latência de Ponta a Ponta (Rede, Match e Persistência):** ~800µs (Redução de 97% em relação ao modelo síncrono inicial).
+* **Latência de Ponta a Ponta (Rede, Match e Persistência):** ~800µs.
 * **Throughput:** Escalável para milhares de Operações por Segundo (OPS).
 
 ---
@@ -14,16 +14,16 @@ Este projeto consiste em um motor de negociação (Matching Engine) de baixa lat
 
 O projeto foi construído seguindo princípios de sistemas distribuídos e alta disponibilidade, dividido em quatro camadas principais:
 
-### 1. Core Engine (O Coração)
+### 1. Core Engine 
 Utiliza uma estrutura de dados baseada em `TreeMap` e `LinkedList` para garantir prioridade de Preço e Tempo (Price-Time Priority).
 * **Bids (Compra):** Ordenados do maior para o menor preço.
 * **Asks (Venda):** Ordenados do menor para o maior preço.
 * **Complexidade Algorítmica:** Busca de melhor preço em $O(1)$ e inserção em $O(\log n)$.
 
-### 2. Networking (TCP Sockets)
-O servidor utiliza um Thread Pool (`ExecutorService`) para gerenciar múltiplas conexões simultâneas de clientes. O protocolo de comunicação é baseado em texto plano via TCP, permitindo que qualquer terminal conectado envie ordens de forma independente.
+### 2. Networking (Sockets TCP)
+O servidor utiliza um Thread Pool (`ExecutorService`) para gerenciar múltiplas conexões simultâneas de clientes. O protocolo de comunicação é baseado em texto comum via TCP, permitindo que qualquer terminal conectado envie ordens de forma independente.
 
-### 3. Persistência Assíncrona (Eficiência)
+### 3. Persistência Assíncrona 
 Para evitar o gargalo do disco rígido (I/O), foi implementado o padrão Producer-Consumer com o uso de uma `BlockingQueue`.
 * O motor (Producer) envia tarefas de banco para a fila.
 * Um `PersistenceWorker` (Consumer) dedicado processa as gravações no SQLite em background, liberando o motor para o próximo match instantaneamente na memória RAM.
@@ -64,7 +64,7 @@ As ordens devem ser enviadas ao servidor seguindo o formato delimitado por ponto
 
 ### Pré-requisitos
 * Java Development Kit (JDK) 17 ou superior instalado.
-* IDE (IntelliJ IDEA recomendada) ou terminal com acesso ao compilador `javac`.
+* IDE (Utilizado IntelliJ IDEA) ou terminal com acesso ao compilador `javac`.
 
 ### Passo 1: Iniciar o Servidor
 Execute o método principal da classe `app.Main`. O console indicará o ciclo de inicialização:
@@ -80,11 +80,11 @@ A cada 10 segundos, o console do Servidor exibirá automaticamente o relatório 
 
 ---
 
-## Fluxo de uma Ordem (Life of an Order)
+## Fluxo de uma Ordem 
 
-1. **Ingress:** A string de rede chega via Socket TCP e é tratada pelo `TradingServer`.
-2. **Persistence (Phase 1):** O comando de inserção (`SAVE_ORDER`) é enviado de forma não-bloqueante para o `PersistenceWorker`.
+1. **Ingresso:** A string de rede chega via Socket TCP e é tratada pelo `TradingServer`.
+2. **Persistência (Fase 1):** O comando de inserção (`SAVE_ORDER`) é enviado de forma não-bloqueante para o `PersistenceWorker`.
 3. **Matching:** O `MatchingEngine` intercepta a ordem sob escopo de exclusão mútua (`ReentrantLock`) e executa o cruzamento contra o `OrderBook`.
-4. **Execution:** Se houver correspondência de preço, um objeto `Trade` é gerado e os saldos das ordens passivas e agressoras são alterados na RAM.
-5. **Persistence (Phase 2):** As atualizações de saldo e o histórico do negócio são enviados para a fila do `PersistenceWorker`.
-6. **Egress:** O cliente recebe a resposta textual contendo o ID da ordem gerada e a quantidade de matches ocorridos.
+4. **Execução:** Se houver correspondência de preço, um objeto `Trade` é gerado e os saldos das ordens passivas e agressoras são alterados na RAM.
+5. **Persistência (Fase 2):** As atualizações de saldo e o histórico do negócio são enviados para a fila do `PersistenceWorker`.
+6. **Egresso:** O cliente recebe a resposta textual contendo o ID da ordem gerada e a quantidade de matches ocorridos.
