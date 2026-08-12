@@ -88,3 +88,5 @@ A cada 10 segundos, o console do Servidor exibirá automaticamente o relatório 
 4. **Execução:** Se houver correspondência de preço, um objeto `Trade` é gerado e os saldos das ordens passivas e agressoras são alterados na RAM.
 5. **Persistência (Fase 2):** As atualizações de saldo e o histórico do negócio são enviados para a fila do `PersistenceWorker`.
 6. **Egresso:** O cliente recebe a resposta textual contendo o ID da ordem gerada e a quantidade de matches ocorridos.
+
+Autor: [Daniel Kuhn](https://github.com/DanielUmedaKuhn)
