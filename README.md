@@ -1,4 +1,4 @@
-# Moto de Correspondência de Alta Performance em Java
+# Motor de Correspondência de Alta Performance em Java
 
 Este projeto consiste em um motor de negociação (Matching Engine) de baixa latência capaz de processar milhares de ordens por segundo. O sistema implementa um Limit Order Book (LOB) completo, com persistência assíncrona, conectividade via rede e telemetria em tempo real.
 
