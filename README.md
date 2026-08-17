@@ -1,4 +1,4 @@
-# High-Performance Matching Engine in Java
+# Moto de Correspondência de Alta Performance em Java
 
 Este projeto consiste em um motor de negociação (Matching Engine) de baixa latência capaz de processar milhares de ordens por segundo. O sistema implementa um Limit Order Book (LOB) completo, com persistência assíncrona, conectividade via rede e telemetria em tempo real.
 
@@ -64,7 +64,7 @@ As ordens devem ser enviadas ao servidor seguindo o formato delimitado por ponto
 
 ### Pré-requisitos
 * Java Development Kit (JDK) 17 ou superior instalado.
-* IDE (Utilizado IntelliJ IDEA) ou terminal com acesso ao compilador `javac`.
+* IDE ou terminal com acesso ao compilador `javac`.
 
 ### Passo 1: Iniciar o Servidor
 Execute o método principal da classe `app.Main`. O console indicará o ciclo de inicialização:
