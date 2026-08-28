@@ -57,7 +57,7 @@ public class MatchingEngine {
             dbWorker.enqueue(new PersistenceTask(PersistenceTask.Type.UPDATE_ORDER,incoming, null));
 
             //apenas orders limit com saldo vão para o livro, orders market não executadas são canceladas
-            if (incoming.quantity > 0 && incoming.type ==  OrderType.LIMIT) {
+            if (incoming.getQuantity() > 0 && incoming.type ==  OrderType.LIMIT) {
                 book.addOrder(incoming);
             }
 
@@ -105,7 +105,7 @@ public class MatchingEngine {
     }
     private void match(Order incoming, TreeMap<Long, LinkedList<Order>> oppositeSide, List<Trade> trades){
         //enquanto houver ordens do lado oposto e a ordem atual ainda tiver quantidade
-        while(!oppositeSide.isEmpty() && incoming.quantity > 0){
+        while(!oppositeSide.isEmpty() && incoming.getQuantity() > 0){
             //melhor preço disponível no lado oposto (prioridade de preço)
             long bestOppositePrice = oppositeSide.firstKey();
             boolean canMatch = (incoming.type == OrderType.MARKET) || (incoming.side == Side.BUY ?
@@ -118,20 +118,20 @@ public class MatchingEngine {
 
             LinkedList<Order> ordersAtLevel = oppositeSide.get(bestOppositePrice);
 
-            while(!ordersAtLevel.isEmpty() && incoming.quantity > 0){
+            while(!ordersAtLevel.isEmpty() && incoming.getQuantity() > 0){
                 Order restingOrder = ordersAtLevel.peekFirst();
-                int matchQuantity = Math.min(incoming.quantity, restingOrder.quantity);
+                int matchQuantity = Math.min(incoming.getQuantity(), restingOrder.getQuantity());
 
                 Trade trade = createTrade(incoming, restingOrder, matchQuantity, bestOppositePrice);
                 trades.add(trade);
 
                 dbWorker.enqueue(new PersistenceTask(PersistenceTask.Type.SAVE_TRADE, null, trade));
 
-                incoming.quantity -= matchQuantity;
-                restingOrder.quantity -= matchQuantity;
+                incoming.reduceQuantity(matchQuantity);;
+                restingOrder.reduceQuantity(matchQuantity);;
 
                 dbWorker.enqueue(new PersistenceTask(PersistenceTask.Type.UPDATE_ORDER, restingOrder,null));
-                if(restingOrder.quantity == 0){
+                if(restingOrder.getQuantity() == 0){
                     ordersAtLevel.removeFirst();
                     book.removeOrderFromId(restingOrder.id);  //se a order acabou, é removida do mapa de IDs
                 }

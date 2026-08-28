@@ -23,8 +23,8 @@ public class OrderDAO {
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setLong(1, order.id);
             pstmt.setLong(2, order.price);
-            pstmt.setInt(3, order.initialQuantity);
-            pstmt.setInt(4, order.quantity);
+            pstmt.setInt(3, order.getInitialQuantity());
+            pstmt.setInt(4, order.getQuantity());
             pstmt.setString(5, order.side.toString());
             pstmt.setString(6, order.type.toString());
 
@@ -36,12 +36,12 @@ public class OrderDAO {
 
     //atualiza a quantidade restante e o status de uma order
     public void update(Order order) {
-        String status = (order.quantity == 0) ? "FILLED" : "PARTIAL";
+        String status = (order.getQuantity() == 0) ? "FILLED" : "PARTIAL";
         String sql = "UPDATE orders SET quantity = ?, status = ? WHERE id = ?";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            pstmt.setInt(1, order.quantity);
+            pstmt.setInt(1, order.getQuantity());
             pstmt.setString(2, status);
             pstmt.setLong(3, order.id);
 
