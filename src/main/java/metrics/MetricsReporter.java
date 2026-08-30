@@ -19,7 +19,7 @@ public class MetricsReporter implements Runnable{
 
                 List<Long> latencies = MetricsRegistry.getSnapshot();
 
-                System.out.println("-----[TELEMETRIA DO SISTEMA]-----");
+                System.out.println("TELEMETRIA DO SISTEMA");
                 System.out.printf("Vazão atual: %.2f orders/segundo (OPS)\n", ops);
                 System.out.println("Orders totais: " + MetricsRegistry.totalOrders.sum());
 
@@ -30,7 +30,7 @@ public class MetricsReporter implements Runnable{
                     long p99 = latencies.get((int) (latencies.size() * 0.50));
                     long avg = latencies.stream().mapToLong(Long::longValue).sum() / latencies.size();
 
-                    System.out.println("Negócios (Trades): " + MetricsRegistry.totalTrades.sum());
+                    System.out.println("Trades: " + MetricsRegistry.totalTrades.sum());
                     System.out.println("Latência Média: " + avg + "µs");
                     System.out.println("Percentis: p50: " + p50 + "µs | p95: " + p95 + "µs | p99: " + p99 + " µs");
                     System.out.println("---------------------------------");

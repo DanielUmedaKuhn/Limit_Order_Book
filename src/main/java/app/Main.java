@@ -12,7 +12,7 @@ public class Main {
 
         int porta = 8080;
         TradingServer server = new TradingServer(porta, engine);
-        System.out.println("[INFO] Servidor aguardando conexões na porta " + porta + "...");
+        System.out.println("INFO - Servidor aguardando conexões na porta " + porta + ".");
 
         Thread metricsThread = new Thread(new metrics.MetricsReporter());
         metricsThread.setDaemon(true);

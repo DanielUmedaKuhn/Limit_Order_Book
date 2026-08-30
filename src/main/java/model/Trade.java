@@ -15,7 +15,6 @@ public class Trade {
 
     @Override
     public String toString(){
-        return String.format("  [Sub-Order] Vendedor: %d | Comprador: %d | Quantidade: %d | Preço: %d,",
-                             sellerId, buyerId, quantity, price);
+        return String.format("  [Sub-Order] Vendedor: %d | Comprador: %d | Quantidade: %d | Preço: %d,", sellerId, buyerId, quantity, price);
     }
 }

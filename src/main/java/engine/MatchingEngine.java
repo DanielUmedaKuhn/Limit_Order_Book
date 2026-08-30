@@ -25,14 +25,14 @@ public class MatchingEngine {
     public void rebuildBookFromDatabase(){
         lock.lock();
         try{
-            System.out.println("[CORE] Carregando orders abertas do banco de dados...");
+            System.out.println("CORE - Carregando orders abertas do banco de dados.");
             List<Order> openOrders = orderDAO.findAllOpen();
 
             for(Order order : openOrders){
                 book.addOrder(order);
             }
 
-            System.out.println("[CORE] Recuperação concluída. " + openOrders.size() + " orders em memória.");
+            System.out.println("CORE - Recuperação concluída. " + openOrders.size() + " orders em memória.");
         }
         finally{
             lock.unlock();

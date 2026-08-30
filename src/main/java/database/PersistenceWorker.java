@@ -13,7 +13,7 @@ public class PersistenceWorker implements Runnable{
 
     @Override
     public void run(){
-        System.out.println("[DB-WORKER] Thread de persistência iniciada.");
+        System.out.println("DB-WORKER - Thread de persistência iniciada.");
         while(true){
             try{
                 PersistenceTask task = queue.take();  //Espera até ter algo na fila

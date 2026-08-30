@@ -30,7 +30,7 @@ public class OrderDAO {
 
             pstmt.executeUpdate();
         } catch (SQLException e) {
-            System.err.println("[DAO] Erro ao salvar order: " + e.getMessage());
+            System.err.println("DAO - Erro ao salvar order: " + e.getMessage());
         }
     }
 
@@ -48,7 +48,7 @@ public class OrderDAO {
             pstmt.executeUpdate();
         }
         catch(SQLException e){
-            System.err.println("[DAO] Erro ao atualizar order: " + e.getMessage());
+            System.err.println("DAO - Erro ao atualizar order: " + e.getMessage());
         }
     }
 
@@ -73,7 +73,7 @@ public class OrderDAO {
             }
         }
         catch (SQLException e){
-            System.err.println("[DAO] Erro ao buscar orders abertas: " + e.getMessage());
+            System.err.println("DAO - Erro ao buscar orders abertas: " + e.getMessage());
             e.printStackTrace();
         }
 
