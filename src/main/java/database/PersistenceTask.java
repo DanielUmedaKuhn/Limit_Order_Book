@@ -8,9 +8,9 @@ public class PersistenceTask {
     public final Order order;
     public final Trade trade;
 
-    public PersistenceTask(Type type, Order order, Trade trade){
+    public PersistenceTask(Type type, Order order, Trade trade){    //constroi por 
         this.type = type;
-        this.order = order;
+        this.order = order;   //somente copia o endereço da memória
         this.trade = trade;
     }
 }

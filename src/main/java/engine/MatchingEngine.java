@@ -7,13 +7,17 @@ import database.OrderDAO;
 import database.PersistenceTask;
 import database.PersistenceWorker;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class MatchingEngine {
+    private final ReentrantLock lock = new ReentrantLock();
     private final OrderBook book = new OrderBook();
-    private final ReentrantLock lock = new ReentrantLock();  //Controla concorrência
     private final OrderDAO orderDAO = new OrderDAO();
     private final PersistenceWorker dbWorker = new PersistenceWorker();
+    private final Order[] ringBuffer = new Order[1024];
+    private final AtomicLong producer = new AtomicLong();
+    private final AtomicLong consumer = new AtomicLong();
 
     public MatchingEngine(){
         Thread t = new Thread(dbWorker);
@@ -39,13 +43,29 @@ public class MatchingEngine {
         }
     }
 
+    public void enqueue(Order order){
+        long currentProducer = producer.getAndIncrement();
+        
+
+        while(true){
+            long currentConsumer = consumer.get();
+
+            if(currentProducer - currentConsumer < ringBuffer.length){
+                ringBuffer[(int)(currentProducer % ringBuffer.length)] = order;
+                break;
+            } else {
+                Thread.yield();  //espera a fila ter espaço
+            }
+        }
+    }
+
     public List<Trade> submitOrder(Order incoming) {
         //início da região crítica
         lock.lock();
         long startTime = System.nanoTime();
         try {
             metrics.MetricsRegistry.totalOrders.increment();
-            dbWorker.enqueue(new PersistenceTask(PersistenceTask.Type.SAVE_ORDER, incoming, null));
+            dbWorker.enqueue(new PersistenceTask(PersistenceTask.Type.SAVE_ORDER, incoming, null));  //incoming é uma referência
 
             List<Trade> trades = new ArrayList<>();
             if (incoming.side == Side.BUY) {
