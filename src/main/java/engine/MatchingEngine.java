@@ -8,13 +8,12 @@ import database.PersistenceTask;
 import database.PersistenceWorker;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class MatchingEngine {
-    private final ReentrantLock lock = new ReentrantLock();
     private final OrderBook book = new OrderBook();
     private final OrderDAO orderDAO = new OrderDAO();
     private final PersistenceWorker dbWorker = new PersistenceWorker();
+    
     private final Order[] ringBuffer = new Order[1024];
     private final AtomicLong producer = new AtomicLong();
     private final AtomicLong consumer = new AtomicLong();
@@ -24,29 +23,28 @@ public class MatchingEngine {
         t.setName("DB-Persistence_Thread");
         t.setDaemon(true);
         t.start();
+
+        Runnable coreRunnable = this::run;
+        Thread t2 = new Thread(coreRunnable);
+        t2.setName("Core_Thread");
+        t2.setDaemon(true);
+        t2.start();
     }
 
     public void rebuildBookFromDatabase(){
-        lock.lock();
-        try{
-            System.out.println("CORE - Carregando orders abertas do banco de dados.");
-            List<Order> openOrders = orderDAO.findAllOpen();
+        System.out.println("CORE - Carregando orders abertas do banco de dados.");
+        List<Order> openOrders = orderDAO.findAllOpen();
 
-            for(Order order : openOrders){
-                book.addOrder(order);
-            }
+        for(Order order : openOrders){
+            book.addOrder(order);
+        }
 
-            System.out.println("CORE - Recuperação concluída. " + openOrders.size() + " orders em memória.");
-        }
-        finally{
-            lock.unlock();
-        }
+        System.out.println("CORE - Recuperação concluída. " + openOrders.size() + " orders em memória.");
     }
 
     public void enqueue(Order order){
         long currentProducer = producer.getAndIncrement();
-        
-
+       
         while(true){
             long currentConsumer = consumer.get();
 
@@ -59,70 +57,74 @@ public class MatchingEngine {
         }
     }
 
-    public List<Trade> submitOrder(Order incoming) {
-        //início da região crítica
-        lock.lock();
-        long startTime = System.nanoTime();
-        try {
-            metrics.MetricsRegistry.totalOrders.increment();
-            dbWorker.enqueue(new PersistenceTask(PersistenceTask.Type.SAVE_ORDER, incoming, null));  //incoming é uma referência
+    public void run(){
+        while (true){
+            long currentProducer = producer.get();
+            long currentConsumer = consumer.get();
 
-            List<Trade> trades = new ArrayList<>();
-            if (incoming.side == Side.BUY) {
-                match(incoming, book.asks, trades);
+            if(currentConsumer < currentProducer){
+                Order processingOrder = ringBuffer[(int)(currentConsumer % ringBuffer.length)];
+                consumer.incrementAndGet();
+                submitOrder(processingOrder);
             } else {
-                match(incoming, book.bids, trades);
+                Thread.yield();  //espera a fila ter elementos
             }
-
-            dbWorker.enqueue(new PersistenceTask(PersistenceTask.Type.UPDATE_ORDER,incoming, null));
-
-            //apenas orders limit com saldo vão para o livro, orders market não executadas são canceladas
-            if (incoming.getQuantity() > 0 && incoming.type ==  OrderType.LIMIT) {
-                book.addOrder(incoming);
-            }
-
-            long endTime = System.nanoTime();
-            System.out.println("Latência: " + (endTime - startTime) / 1000 + "µs\n");
-            long latencyMicros = (endTime - startTime) / 1000;
-
-            metrics.MetricsRegistry.recordLatency(latencyMicros);
-            metrics.MetricsRegistry.totalTrades.add(trades.size());
-
-            return trades;
+            
         }
-        finally {
-            //garante que o lock é liberado
-            lock.unlock();
+    }
+
+    public List<Trade> submitOrder(Order incoming) {
+        long startTime = System.nanoTime();
+    
+        metrics.MetricsRegistry.totalOrders.increment();
+        dbWorker.enqueue(new PersistenceTask(PersistenceTask.Type.SAVE_ORDER, incoming, null));  //incoming é uma referência
+
+        List<Trade> trades = new ArrayList<>();
+        if (incoming.side == Side.BUY) {
+            match(incoming, book.asks, trades);
+        } else {
+            match(incoming, book.bids, trades);
         }
+
+        dbWorker.enqueue(new PersistenceTask(PersistenceTask.Type.UPDATE_ORDER,incoming, null));
+
+        //apenas orders limit com saldo vão para o livro, orders market não executadas são canceladas
+        if (incoming.getQuantity() > 0 && incoming.type ==  OrderType.LIMIT) {
+            book.addOrder(incoming);
+        }
+
+        long endTime = System.nanoTime();
+        System.out.println("Latência: " + (endTime - startTime) / 1000 + "µs\n");
+        long latencyMicros = (endTime - startTime) / 1000;
+
+        metrics.MetricsRegistry.recordLatency(latencyMicros);
+        metrics.MetricsRegistry.totalTrades.add(trades.size());
+
+        return trades;
     }
 
     public boolean cancelOrder(long orderId) {  //não precisa percorrer o livro todo, cancela direto pelo ID
-        lock.lock();
-        try {
-            Order order = book.getOrder(orderId);
-            if (order == null) {
-                return false;
-            }
-
-            var sideMap = (order.side == Side.BUY) ? book.bids : book.asks;
-            LinkedList<Order> ordersAtPrice = sideMap.get(order.price);
-
-            if (ordersAtPrice != null) {
-                ordersAtPrice.remove(order);  //remove da fila FIFO
-                if (ordersAtPrice.isEmpty()) {
-                    sideMap.remove(order.price);
-                }
-            }
-
-            book.removeOrderFromId(orderId);  //libera memória ao remover do mapa de IDs
-
-            dbWorker.enqueue(new PersistenceTask(PersistenceTask.Type.UPDATE_ORDER, order, null));
-            return true;
+        Order order = book.getOrder(orderId);
+        if (order == null) {
+            return false;
         }
-        finally{
-                lock.unlock();
+
+        var sideMap = (order.side == Side.BUY) ? book.bids : book.asks;
+        LinkedList<Order> ordersAtPrice = sideMap.get(order.price);
+
+        if (ordersAtPrice != null) {
+            ordersAtPrice.remove(order);  //remove da fila FIFO
+            if (ordersAtPrice.isEmpty()) {
+                sideMap.remove(order.price);
+            }
         }
+
+        book.removeOrderFromId(orderId);  //libera memória ao remover do mapa de IDs
+
+        dbWorker.enqueue(new PersistenceTask(PersistenceTask.Type.UPDATE_ORDER, order, null));
+        return true;
     }
+
     private void match(Order incoming, TreeMap<Long, LinkedList<Order>> oppositeSide, List<Trade> trades){
         //enquanto houver ordens do lado oposto e a ordem atual ainda tiver quantidade
         while(!oppositeSide.isEmpty() && incoming.getQuantity() > 0){
@@ -162,6 +164,7 @@ public class MatchingEngine {
             }
         }
     }
+
     private Trade createTrade(Order incoming, Order resting, int quantity, long price){
         //define comprador/vendedor, independente de quem agrediu o mercado
         long buyerId = (incoming.side == Side.BUY) ? incoming.id : resting.id;
