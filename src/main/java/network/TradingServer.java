@@ -38,22 +38,28 @@ public class TradingServer {
             String inputLine;
             while((inputLine = in.readLine()) != null) {
                 try {
-                    //protocolo: SIDE;PRICE;QUANTITY;TYPE
                     String[] parts = inputLine.split(";");
-                    enums.Side side = enums.Side.valueOf(parts[0].toUpperCase());
-                    long price = Long.parseLong(parts[1]);
-                    int qty = Integer.parseInt(parts[2]);
-                    enums.OrderType type = enums.OrderType.valueOf(parts[3].toUpperCase());
+                    if(parts[0].equalsIgnoreCase("CANCEL")){
+                        long orderId = Long.parseLong(parts[1]);
+                        boolean canceled = engine.cancelOrder(orderId);
+                        out.println("Order " + orderId + (canceled ? " cancelada com sucesso." : " não encontrada ou já executada."));
+                    } else {
+                        //protocolo: SIDE;PRICE;QUANTITY;TYPE
+                        enums.Side side = enums.Side.valueOf(parts[0].toUpperCase());
+                        long price = Long.parseLong(parts[1]);
+                        int qty = Integer.parseInt(parts[2]);
+                        enums.OrderType type = enums.OrderType.valueOf(parts[3].toUpperCase());
 
-                    //ID único baseado no tempo para cada order de rede
-                    long orderId = System.currentTimeMillis();
+                        //ID único baseado no tempo para cada order de rede
+                        long orderId = System.currentTimeMillis();
 
-                    model.Order newOrder = new model.Order(orderId, price, qty, qty, side, type);
-                    var trades = engine.submitOrder(newOrder);
-                    out.println("Order " + orderId + "processada. Matches " + trades.size());
+                        model.Order newOrder = new model.Order(orderId, price, qty, qty, side, type);
+                        var trades = engine.submitOrder(newOrder);
+                        out.println("Order " + orderId + " processada. Matches " + trades.size());
+                    }
                 }
                 catch(Exception e){
-                    out.println("ERRO: Formato Inválido. Use SIDE;PRICE;QTY;TYPE (ex: BUY;150;10;LIMIT)");
+                    out.println("ERRO: Formato Inválido. Use SIDE;PRICE;QTY;TYPE (ex: BUY;150;10;LIMIT) ou CANCEL;ID (ex: CANCEL;16954203)");
                 }
             }
         }

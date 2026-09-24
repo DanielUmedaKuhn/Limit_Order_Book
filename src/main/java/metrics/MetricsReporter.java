@@ -21,7 +21,7 @@ public class MetricsReporter implements Runnable{
 
                 System.out.println("TELEMETRIA DO SISTEMA");
                 System.out.printf("Vazão atual: %.2f orders/segundo (OPS)\n", ops);
-                System.out.println("Orders totais: " + MetricsRegistry.totalOrders.sum());
+                System.out.println("Orders totais: " + MetricsRegistry.totalOrders.sum() + "\n");
 
                 if(!latencies.isEmpty()) {
                     Collections.sort(latencies);

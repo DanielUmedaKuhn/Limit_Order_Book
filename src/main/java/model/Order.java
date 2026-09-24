@@ -8,6 +8,8 @@ public class Order {
     private int quantity;
     public final Side side;
     public final OrderType type;
+    public Order prev;
+    public Order next;
 
     public Order(long id, long price, int initialQuantity, int currentQuantity, Side side, OrderType type){
         this.id = id;

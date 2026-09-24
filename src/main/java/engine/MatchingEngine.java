@@ -110,7 +110,7 @@ public class MatchingEngine {
         }
 
         var sideMap = (order.side == Side.BUY) ? book.bids : book.asks;
-        LinkedList<Order> ordersAtPrice = sideMap.get(order.price);
+        PriceLevelQueue ordersAtPrice = sideMap.get(order.price);
 
         if (ordersAtPrice != null) {
             ordersAtPrice.remove(order);  //remove da fila FIFO
@@ -120,12 +120,12 @@ public class MatchingEngine {
         }
 
         book.removeOrderFromId(orderId);  //libera memória ao remover do mapa de IDs
-
+        order.setQuantity(0);
         dbWorker.enqueue(new PersistenceTask(PersistenceTask.Type.UPDATE_ORDER, order, null));
         return true;
     }
 
-    private void match(Order incoming, TreeMap<Long, LinkedList<Order>> oppositeSide, List<Trade> trades){
+    private void match(Order incoming, TreeMap<Long, PriceLevelQueue> oppositeSide, List<Trade> trades){
         //enquanto houver ordens do lado oposto e a ordem atual ainda tiver quantidade
         while(!oppositeSide.isEmpty() && incoming.getQuantity() > 0){
             //melhor preço disponível no lado oposto (prioridade de preço)
@@ -138,7 +138,7 @@ public class MatchingEngine {
                 break; //se o melhor preço não serve, nenhum servirá
             }
 
-            LinkedList<Order> ordersAtLevel = oppositeSide.get(bestOppositePrice);
+            PriceLevelQueue ordersAtLevel = oppositeSide.get(bestOppositePrice);
 
             while(!ordersAtLevel.isEmpty() && incoming.getQuantity() > 0){
                 Order restingOrder = ordersAtLevel.peekFirst();

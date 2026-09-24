@@ -13,6 +13,8 @@ public class TradingClient {
             System.out.println("Conectado ao Trading Server.");
             System.out.println("Envie orders no formato: SIDE;PRICE;QTY;TYPE");
             System.out.println("Exemplo: BUY;100;5;LIMIT (ou 'sair' para encerrar)");
+            System.out.println("Para cancelar uma order, envie: CANCEL;ID (Exemplo: CANCEL;16954203)");
+            System.out.println("Digite 'sair' para encerrar.");
 
             while(true){
                 System.out.print("> ");
