@@ -63,9 +63,15 @@ public class MatchingEngine {
             long currentConsumer = consumer.get();
 
             if(currentConsumer < currentProducer){
+                int index = (int)(currentConsumer & ringBuffer.length);
                 Order processingOrder = ringBuffer[(int)(currentConsumer % ringBuffer.length)];
-                consumer.incrementAndGet();
-                submitOrder(processingOrder);
+                if(processingOrder != null){
+                    consumer.incrementAndGet();
+                    submitOrder(processingOrder);
+                    ringBuffer[index] = null;
+                } else { 
+                    Thread.yield();
+                }
             } else {
                 Thread.yield();  //espera a fila ter elementos
             }

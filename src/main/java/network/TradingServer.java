@@ -54,8 +54,8 @@ public class TradingServer {
                         long orderId = System.currentTimeMillis();
 
                         model.Order newOrder = new model.Order(orderId, price, qty, qty, side, type);
-                        var trades = engine.submitOrder(newOrder);
-                        out.println("Order " + orderId + " processada. Matches " + trades.size());
+                        engine.enqueue(newOrder);
+                        out.println("Order " + orderId + " recebida e enviada para a fila de processamento.");
                     }
                 }
                 catch(Exception e){
