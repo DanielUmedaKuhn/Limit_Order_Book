@@ -5,7 +5,7 @@ Este projeto consiste em um motor de negociação (Matching Engine) de ultra-bai
 ## Destaques de Performance 📈
 
 * **Latência em Memória:** ~2-7µs.
-* **Latência de Ponta a Ponta (Rede, Match e Persistência):** ~50µs a 100µs (após JVM Warm-Up, que leva cerca de 1ms após algumas poucas orders).
+* **Latência de Ponta a Ponta (Rede, Match e Persistência):** ~40µs - 60µs (após JVM Warm-Up, que leva cerca de 1ms após uma/poucas orders).
 * **Throughput:** Escalável para milhares de Operações por Segundo (OPS) sem contenção de threads.
 
 ---
@@ -95,7 +95,7 @@ Execute a classe `network.TradingClient` (pode ser executada em múltiplas inst�
    Cerca de 800µs.
    
 3. Versão final (Adição de Single Write-Principle, Ring Buffer e Batch Processing):
-   Cerca de 60µs.
+   Cerca de 40µs a 60µs.
 
 ---
 
