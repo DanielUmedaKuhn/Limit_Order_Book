@@ -4,7 +4,6 @@ import model.Order;
 import model.Trade;
 import enums.Side;
 import database.OrderDAO;
-import database.PersistenceTask;
 import database.PersistenceWorker;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
