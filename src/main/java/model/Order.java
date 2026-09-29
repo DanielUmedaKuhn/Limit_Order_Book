@@ -2,12 +2,12 @@ package model;
 import enums.*;
 
 public class Order {
-    public final long id;
-    public final long price;
-    private final int initialQuantity;
+    public long id;
+    public long price;
+    private int initialQuantity;
     private int quantity;
-    public final Side side;
-    public final OrderType type;
+    public Side side;
+    public OrderType type;
     public Order prev;
     public Order next;
 
@@ -38,5 +38,16 @@ public class Order {
         } else {
             throw new IllegalArgumentException("Quantidade negociada inválida ou superior ao saldo.");
         }
+    }
+
+    public void reset (long newId, long newPrice, long newQty, Side newSide, OrderType newType) {
+        this.id = newId;
+        this.price = newPrice;
+        this.initialQuantity = (int)newQty;
+        this.quantity = (int)newQty;
+        this.side = newSide;
+        this.type = newType;
+        this.prev = null;
+        this.next = null;
     }
 }

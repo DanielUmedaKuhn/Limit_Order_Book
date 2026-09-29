@@ -11,62 +11,60 @@ import java.util.List;
 import java.util.ArrayList;
 
 public class OrderDAO {
-    //salva novas orders no banco de dados
-    public void saveAll(List<Order> orders) {
-        String sql = """
-                INSERT INTO orders (id, price, initial_quantity, quantity, side, type, status)
-                VALUES (?, ?, ?, ?, ?, ?, 'OPEN')
-                """;
+    private Connection conn;
+    private PreparedStatement saveStmt;
+    private PreparedStatement updateStmt;
+
+    public OrderDAO(){
+        try{
+            conn = DatabaseConfig.getConnection();
+            conn.setAutoCommit(false);   //desabilita o commit automático, para que as transações sejam feitas manualmente
+
+            saveStmt = conn.prepareStatement("""
+                    INSERT INTO orders (id, price, initial_quantity, quantity, side, type, status)
+                    VALUES (?, ?, ?, ?, ?, ?, 'OPEN')
+                    """);
+
+            updateStmt = conn.prepareStatement("""
+                    UPDATE orders
+                    SET quantity = ?, status = ?
+                    WHERE id = ?
+                    """);
+        } catch (SQLException e){
+            System.err.println("DAO - Erro ao inicializar PreparedStatements: " + e.getMessage());
+        }
+    }
+
+    //adiciona os dados à fila para gravação
+    public void addSaveBatch(long id, long price, int initialQty, int qty, boolean side, boolean type) throws SQLException{
+        saveStmt.setLong(1, id);
+        saveStmt.setLong(2, price);
+        saveStmt.setInt(3, initialQty);
+        saveStmt.setInt(4, qty);
+        saveStmt.setString(5, side ? "BUY" : "SELL");
+        saveStmt.setString(6, type ? "MARKET" : "LIMIT");
         
-        try (Connection conn = DatabaseConfig.getConnection();
-            PreparedStatement pstmt = conn.prepareStatement(sql)){
-                
-            for(Order order : orders){
+        saveStmt.addBatch();
+    }
 
-                pstmt.setLong(1, order.id);
-                pstmt.setLong(2, order.price);
-                pstmt.setInt(3, order.getInitialQuantity());
-                pstmt.setInt(4, order.getQuantity());
-                pstmt.setString(5, order.side.toString());
-                pstmt.setString(6, order.type.toString());
+    //adiciona os dados à fila para atualização
+    public void addUpdateBatch(long id, int qty) throws SQLException{
+        updateStmt.setInt(1, qty);
+        updateStmt.setString(2, qty == 0 ? "FILLED" : "PARTIAL");
+        updateStmt.setLong(3, id);
+        updateStmt.addBatch();
+    }
 
-                pstmt.addBatch();
-            };
-
-            pstmt.executeBatch();
-
-        } catch (SQLException e) {
-            System.err.println("DAO - Erro ao salvar order: " + e.getMessage());
+    //executa no banco
+    public void executeBatches(){
+        try{
+            saveStmt.executeBatch();
+            updateStmt.executeBatch();
+            conn.commit();
+        } catch (SQLException e){
+            System.err.println("DAO - Erro ao executar batches: " + e.getMessage());
         }
     }
-    
-
-    //atualiza a quantidade restante e o status das orders
-    public void updateAll(List<Order> orders) {
-        String sql = """
-                UPDATE orders 
-                SET quantity = ?, status = ? 
-                WHERE id = ?
-                """;
-
-        try (Connection conn = DatabaseConfig.getConnection();
-        PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            for(Order order : orders){
-                String status = (order.getQuantity() == 0) ? "FILLED" : "PARTIAL";
-                pstmt.setInt(1, order.getQuantity());
-                pstmt.setString(2, status);
-                pstmt.setLong(3, order.id);
-
-                pstmt.addBatch();
-            }
-
-            pstmt.executeBatch();
-
-        } catch(SQLException e){
-            System.err.println("DAO - Erro ao atualizar order: " + e.getMessage());
-        }
-    }
-    
 
     public List<Order> findAllOpen(){
         List<Order> openOrders = new ArrayList<>();
@@ -95,4 +93,20 @@ public class OrderDAO {
 
         return openOrders;
     }
+
+    //último id de order já salva no banco de dados
+    public long getLastOrderId(){
+        String sql = "SELECT MAX(id) FROM orders";
+        try(Connection conn = DatabaseConfig.getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery()){
+                if(rs.next()){
+                    return rs.getLong(1);
+                }
+        } catch (SQLException e){
+            System.err.println("DAO - Erro ao buscar último id: " + e.getMessage());
+        }
+        return 0;   //retorna 0 se nenhuma order for encontrada
+    }
 }
+

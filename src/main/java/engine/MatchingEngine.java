@@ -49,7 +49,7 @@ public class MatchingEngine {
             long currentConsumer = consumer.get();
 
             if(currentProducer - currentConsumer < ringBuffer.length){
-                ringBuffer[(int)(currentProducer % ringBuffer.length)] = order;
+                ringBuffer[(int)(currentProducer & 1023)] = order;
                 break;
             } else {
                 Thread.yield();  //espera a fila ter espaço
@@ -63,12 +63,11 @@ public class MatchingEngine {
             long currentConsumer = consumer.get();
 
             if(currentConsumer < currentProducer){
-                int index = (int)(currentConsumer & ringBuffer.length);
-                Order processingOrder = ringBuffer[(int)(currentConsumer % ringBuffer.length)];
+                int index = (int)(currentConsumer & 1023);
+                Order processingOrder = ringBuffer[index];
                 if(processingOrder != null){
                     consumer.incrementAndGet();
                     submitOrder(processingOrder);
-                    ringBuffer[index] = null;
                 } else { 
                     Thread.yield();
                 }
@@ -83,7 +82,7 @@ public class MatchingEngine {
         long startTime = System.nanoTime();
     
         metrics.MetricsRegistry.totalOrders.increment();
-        dbWorker.enqueue(new PersistenceTask(PersistenceTask.Type.SAVE_ORDER, incoming, null));  //incoming é uma referência
+        dbWorker.enqueueOrder((byte) 0, incoming.id, incoming.price, incoming.getInitialQuantity(), incoming.getQuantity(), incoming.side == Side.BUY, incoming.type == OrderType.MARKET);  //incoming é uma referência
 
         List<Trade> trades = new ArrayList<>();
         if (incoming.side == Side.BUY) {
@@ -92,7 +91,7 @@ public class MatchingEngine {
             match(incoming, book.bids, trades);
         }
 
-        dbWorker.enqueue(new PersistenceTask(PersistenceTask.Type.UPDATE_ORDER,incoming, null));
+        dbWorker.enqueueOrder((byte) 1, incoming.id, incoming.price, incoming.getInitialQuantity(), incoming.getQuantity(), incoming.side == Side.BUY, incoming.type == OrderType.MARKET);
 
         //apenas orders limit com saldo vão para o livro, orders market não executadas são canceladas
         if (incoming.getQuantity() > 0 && incoming.type ==  OrderType.LIMIT) {
@@ -127,7 +126,7 @@ public class MatchingEngine {
 
         book.removeOrderFromId(orderId);  //libera memória ao remover do mapa de IDs
         order.setQuantity(0);
-        dbWorker.enqueue(new PersistenceTask(PersistenceTask.Type.UPDATE_ORDER, order, null));
+        dbWorker.enqueueOrder((byte) 1, order.id, order.price, order.getInitialQuantity(), order.getQuantity(), order.side == Side.BUY, order.type == OrderType.MARKET);
         return true;
     }
 
@@ -148,17 +147,24 @@ public class MatchingEngine {
 
             while(!ordersAtLevel.isEmpty() && incoming.getQuantity() > 0){
                 Order restingOrder = ordersAtLevel.peekFirst();
+
+                if(restingOrder.getQuantity() <= 0){
+                    ordersAtLevel.removeFirst();
+                    book.removeOrderFromId(restingOrder.id);
+                    continue;
+                }
+
                 int matchQuantity = Math.min(incoming.getQuantity(), restingOrder.getQuantity());
 
                 Trade trade = createTrade(incoming, restingOrder, matchQuantity, bestOppositePrice);
                 trades.add(trade);
 
-                dbWorker.enqueue(new PersistenceTask(PersistenceTask.Type.SAVE_TRADE, null, trade));
+                dbWorker.enqueueTrade((byte) 2, trade.buyerId, trade.sellerId, trade.price, trade.quantity);
 
                 incoming.reduceQuantity(matchQuantity);;
                 restingOrder.reduceQuantity(matchQuantity);;
 
-                dbWorker.enqueue(new PersistenceTask(PersistenceTask.Type.UPDATE_ORDER, restingOrder,null));
+                dbWorker.enqueueOrder((byte) 1, restingOrder.id, restingOrder.price, restingOrder.getInitialQuantity(), restingOrder.getQuantity(), restingOrder.side == Side.BUY, restingOrder.type == OrderType.MARKET);
                 if(restingOrder.getQuantity() == 0){
                     ordersAtLevel.removeFirst();
                     book.removeOrderFromId(restingOrder.id);  //se a order acabou, é removida do mapa de IDs

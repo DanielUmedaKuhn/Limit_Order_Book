@@ -5,27 +5,39 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
 public class TradeDAO {
-    public void saveAll(List<Trade> trades){
-        String sql = """
-                INSERT INTO trades (buyer_order_id, seller_order_id, price, quantity)
-                VALUES(?, ?, ?, ?)
-                """;
+    private Connection conn;
+    private PreparedStatement saveStmt;
 
-        try(Connection conn = DatabaseConfig.getConnection();
-            PreparedStatement pstmt = conn.prepareStatement(sql)){
-            for(Trade trade : trades){
-                pstmt.setLong(1, trade.buyerId);
-                pstmt.setLong(2, trade.sellerId);
-                pstmt.setLong(3, trade.price);
-                pstmt.setInt(4, trade.quantity);
-
-                pstmt.addBatch();
-            }
+    public TradeDAO(){
+        try{
+            conn = DatabaseConfig.getConnection();
+            conn.setAutoCommit(false);   //desabilita o commit automático, para que as transações sejam feitas manualmente
             
-            pstmt.executeBatch();
+            saveStmt = conn.prepareStatement("""
+                    INSERT INTO trades(buyer_order_id, seller_order_id, price, quantity)
+                    VALUES(?, ?, ?, ?)
+                    """);
+        } catch (SQLException e){
+            System.err.println("DAO - Erro ao inicializar PreparedStatements: " + e.getMessage());
         }
-        catch(SQLException e){
-            System.err.println("[DAO] Erro ao registrar trade: " + e.getMessage());
+        
+    }
+
+    public void addSaveBatch(long buyerId, long sellerId, long price, int quantity) throws SQLException{
+        saveStmt.setLong(1, buyerId);
+        saveStmt.setLong(2, sellerId);
+        saveStmt.setLong(3, price);
+        saveStmt.setInt(4, quantity);
+        
+        saveStmt.addBatch();
+    }
+
+    public void executeBatches(){
+        try{
+            saveStmt.executeBatch();
+            conn.commit();
+        } catch (SQLException e){
+            System.err.println("DAO - Erro ao salvar trades: " + e.getMessage());
         }
     }
 }

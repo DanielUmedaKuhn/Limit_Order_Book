@@ -4,11 +4,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.io.*;
 import java.net.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class TradingServer {
     private final int port;
     private final MatchingEngine engine;
     private final ExecutorService threadPool = Executors.newFixedThreadPool(10);
+    private static final AtomicLong idGenerator = new AtomicLong(System.currentTimeMillis());
 
     public TradingServer(int port, MatchingEngine engine){
         this.port = port;
@@ -51,7 +53,7 @@ public class TradingServer {
                         enums.OrderType type = enums.OrderType.valueOf(parts[3].toUpperCase());
 
                         //ID único baseado no tempo para cada order de rede
-                        long orderId = System.currentTimeMillis();
+                        long orderId = idGenerator.getAndIncrement();
 
                         model.Order newOrder = new model.Order(orderId, price, qty, qty, side, type);
                         engine.enqueue(newOrder);
