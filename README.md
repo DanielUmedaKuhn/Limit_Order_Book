@@ -92,10 +92,14 @@ Execute a classe `network.TradingClient` (pode ser executada em múltiplas inst�
    Cerca de 30ms.
    
 2. 2a versão (Implementação de Producer-Consumer e gravação no banco de dados em background):
-   Cerca de 800µs.
+   Cerca de 800µs.   
    
-3. Versão final (Adição de Single Write-Principle, Ring Buffer e Batch Processing):
-   Cerca de 40µs a 60µs.
+3. 3a versão (Adição de Single Write-Principle, Ring Buffer e Batch Processing):
+   Cerca de 45µs a 60µs.
+
+4. Versão final (Implementação de um segundo ring buffer para escrita no banco de dados):
+   Cerca de 30 a 40µs e 15µs a 30µs abusando da Tiered Compilation.
+   
 
 ---
 
