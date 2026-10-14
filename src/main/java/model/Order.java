@@ -20,6 +20,10 @@ public class Order {
         this.type = type;
     }
 
+    //para poder inicializar a objecto pool
+    public Order(){
+    }
+
     public int getQuantity() {
         return quantity;
     }
@@ -30,6 +34,10 @@ public class Order {
 
     public int getInitialQuantity() {
         return initialQuantity;
+    }
+
+    public void setInitialQuantity(int initialQuantity){
+        this.initialQuantity = initialQuantity;
     }
 
     public void reduceQuantity(int tradedQuantity) {

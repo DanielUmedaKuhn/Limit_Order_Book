@@ -27,7 +27,7 @@ public class MetricsReporter implements Runnable{
                     Collections.sort(latencies);
                     long p50 = latencies.get((int) (latencies.size() * 0.50));
                     long p95 = latencies.get((int) (latencies.size() * 0.95));
-                    long p99 = latencies.get((int) (latencies.size() * 0.50));
+                    long p99 = latencies.get((int) (latencies.size() * 0.99));
                     long avg = latencies.stream().mapToLong(Long::longValue).sum() / latencies.size();
 
                     System.out.println("Trades: " + MetricsRegistry.totalTrades.sum());

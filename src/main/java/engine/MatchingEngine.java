@@ -18,6 +18,10 @@ public class MatchingEngine {
     private final AtomicLong consumer = new AtomicLong();
 
     public MatchingEngine(){
+        for (int i = 0; i < ringBuffer.length; i++) {
+            ringBuffer[i] = new Order(); 
+        }
+        
         Thread t = new Thread(dbWorker);
         t.setName("DB-Persistence_Thread");
         t.setDaemon(true);
@@ -41,14 +45,21 @@ public class MatchingEngine {
         System.out.println("CORE - Recuperação concluída. " + openOrders.size() + " orders em memória.");
     }
 
-    public void enqueue(Order order){
+    public void enqueue(long id, long price, int initialQuantity, int currentQuantity, Side side, OrderType type){
         long currentProducer = producer.getAndIncrement();
        
         while(true){
             long currentConsumer = consumer.get();
 
             if(currentProducer - currentConsumer < ringBuffer.length){
-                ringBuffer[(int)(currentProducer & 1023)] = order;
+                int index = (int)(currentProducer & 1023);
+                Order realOrder = ringBuffer[index];
+                realOrder.id = id;
+                realOrder.price = price;
+                realOrder.setInitialQuantity(initialQuantity);
+                realOrder.setQuantity(currentQuantity);
+                realOrder.side = side;
+                realOrder.type = type;
                 break;
             } else {
                 Thread.yield();  //espera a fila ter espaço

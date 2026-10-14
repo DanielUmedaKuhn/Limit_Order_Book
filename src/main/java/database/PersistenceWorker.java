@@ -56,7 +56,7 @@ public class PersistenceWorker implements Runnable{
 
             if(currentProducer - currentConsumer < 1024){
                 int index = (int)(currentProducer & 1023);
-                dbTaskType[index] = taskType;       //SAVE_ORDER ou UPDATE_ORDER
+                dbTaskType[index] = taskType;       //SAVE_TRADE
 
                 tradeBuyerIds[index] = buyerId;
                 tradeSellerIds[index] = sellerId;
