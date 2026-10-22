@@ -5,7 +5,7 @@ Este projeto consiste em um motor de negociação (Matching Engine) de ultra-bai
 ## Destaques de Performance 📈
 
 * **Latência em Memória:** ~2-7µs.
-* **Latência de Ponta a Ponta (Rede, Match e Persistência):** ~40µs - 60µs (após JVM Warm-Up, que leva cerca de 1ms após uma/poucas orders).
+* **Latência de Ponta a Ponta (Rede, Match e Persistência):** ~40µs - 60µs (após JVM Warm-Up, que demora uma/poucas orders).
 * **Throughput:** Escalável para milhares de Operações por Segundo (OPS) sem contenção de threads.
 
 ---
