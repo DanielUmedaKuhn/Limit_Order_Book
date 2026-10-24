@@ -40,28 +40,35 @@ public class TradingServer {
             String inputLine;
             while((inputLine = in.readLine()) != null) {
                 try {
-                    String[] parts = inputLine.split(";");
+                    String[] parts = inputLine.trim().split("\\s+");
                     if(parts[0].equalsIgnoreCase("CANCEL")){
                         long orderId = Long.parseLong(parts[1]);
                         boolean canceled = engine.cancelOrder(orderId);
                         out.println("Order " + orderId + (canceled ? " cancelada com sucesso." : " não encontrada ou já executada."));
                     } else {
-                        //protocolo: SIDE;PRICE;QUANTITY;TYPE
-                        enums.Side side = enums.Side.valueOf(parts[0].toUpperCase());
-                        long price = Long.parseLong(parts[1]);
-                        int qty = Integer.parseInt(parts[2]);
-                        enums.OrderType type = enums.OrderType.valueOf(parts[3].toUpperCase());
+                        //protocolo: TYPE SIDE PRICE QUANTITY 
+                        enums.OrderType type = enums.OrderType.valueOf(parts[0].toUpperCase());
+                        enums.Side side = enums.Side.valueOf(parts[1].toUpperCase());
+                        long price;
+                        int qty;
+
+                        if (type == enums.OrderType.MARKET){
+                            price = 0;
+                            qty = Integer.parseInt(parts[2]);
+                        } else {
+                            price = Long.parseLong(parts[2]);
+                            qty = Integer.parseInt(parts[3]);
+                        }
 
                         //ID único baseado no tempo para cada order de rede
                         long orderId = idGenerator.getAndIncrement();
 
-                        model.Order newOrder = new model.Order(orderId, price, qty, qty, side, type);
-                        engine.enqueue(newOrder);
+                        engine.enqueue(orderId, price, qty, qty, side, type);
                         out.println("Order " + orderId + " recebida e enviada para a fila de processamento.");
                     }
                 }
                 catch(Exception e){
-                    out.println("ERRO: Formato Inválido. Use SIDE;PRICE;QTY;TYPE (ex: BUY;150;10;LIMIT) ou CANCEL;ID (ex: CANCEL;16954203)");
+                    out.println("ERRO: Formato Inválido. Use limit SIDE PRICE QTY (ex: limit buy 100 10), market SIDE QTY (ex: market buy 10) ou cancel ID (ex: cancel 16954203)");
                 }
             }
         }
