@@ -6,7 +6,7 @@ import java.io.*;
 import java.net.*;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class TradingServer {
+public class TradingServer {  //classe servidor para receber conexões de clientes
     private final int port;
     private final MatchingEngine engine;
     private final ExecutorService threadPool = Executors.newFixedThreadPool(10);
@@ -45,6 +45,9 @@ public class TradingServer {
                         long orderId = Long.parseLong(parts[1]);
                         boolean canceled = engine.cancelOrder(orderId);
                         out.println("Order " + orderId + (canceled ? " cancelada com sucesso." : " não encontrada ou já executada."));
+                    } else if (parts[0].equalsIgnoreCase("BOOK")){
+                        engine.printOrderBook();
+                        out.println("Livro de ordens impresso no terminal do servidor.");
                     } else {
                         //protocolo: TYPE SIDE PRICE QUANTITY 
                         enums.OrderType type = enums.OrderType.valueOf(parts[0].toUpperCase());
@@ -68,7 +71,7 @@ public class TradingServer {
                     }
                 }
                 catch(Exception e){
-                    out.println("ERRO: Formato Inválido. Use limit SIDE PRICE QTY (ex: limit buy 100 10), market SIDE QTY (ex: market buy 10) ou cancel ID (ex: cancel 16954203)");
+                    out.println("ERRO: Formato Inválido. Use limit SIDE PRICE QTY (ex: limit buy 100 10), market SIDE QTY (ex: market buy 10), cancel ID (ex: cancel 16954203) ou 'book' para imprimir o livro de ordens.");
                 }
             }
         }

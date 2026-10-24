@@ -195,4 +195,8 @@ public class MatchingEngine {
         return new Trade(buyerId, sellerId, quantity, price);
 
     }
+
+    public void printOrderBook(){
+        this.book.printOrderBook();
+    }
 }

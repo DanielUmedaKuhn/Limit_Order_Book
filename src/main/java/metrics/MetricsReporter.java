@@ -10,7 +10,7 @@ public class MetricsReporter implements Runnable{
     public void run(){
         while(true){
             try{
-                Thread.sleep(REPORT_INTERVAL_SEC * 1000);  //reporta a cada 10 segundos
+                Thread.sleep(REPORT_INTERVAL_SEC * 6000);  //reporta a cada 60 segundos
 
                 long currentOrders  = MetricsRegistry.totalOrders.sum();
                 long totalInInterval = currentOrders - lastOrdersCount;

@@ -59,4 +59,14 @@ public void remove(Order order){
     public int size(){
         return size;
     }
+
+    public int getTotalVolume(){
+        int volume = 0;
+        Order current = head;
+        while(current != null){
+            volume += current.getQuantity();
+            current = current.next;
+        }
+        return volume;
+    }
 }

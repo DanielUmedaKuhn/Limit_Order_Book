@@ -3,7 +3,7 @@ import java.io.*;
 import java.net.*;
 import java.util.Scanner;
 
-public class TradingClient {
+public class TradingClient {    //classe cliente para acessar o servidor
     public static void main(String[] args){
         try(Socket socket = new Socket("localhost", 8080);
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
@@ -14,6 +14,7 @@ public class TradingClient {
             System.out.println("Para LIMIT: 'limit SIDE PRICE QTY' (ex: limit buy 100 10)");
             System.out.println("Para MARKET: 'market SIDE QTY' (ex: market buy 10)");
             System.out.println("Para cancelar uma order, envie: cancel ID (Exemplo: cancel 16954203)");
+            System.out.println("Para ver o livro de ordens, envie: book");
             System.out.println("Digite 'sair' para encerrar.");
 
             while(true){

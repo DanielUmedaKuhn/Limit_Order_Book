@@ -4,7 +4,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class OrderBook {
-    //TreeMap para a prioridade de preço
+    //TreeMap para a ordenamento automático por preço
     //Bids: preço maior tem prioridade (reverse order)
     public final TreeMap<Long, PriceLevelQueue> bids = new TreeMap<>(Collections.reverseOrder());
     //Asks: preço menor tem prioridade (natural order)
@@ -24,5 +24,25 @@ public class OrderBook {
     public void removeOrderFromId(long id){
         ordersById.remove(id);
     }
+
+    //imprime book atual no terminal do servidor (main)
+    public void printOrderBook(){
+        System.out.println("===================== Order Book =====================");
+        System.out.println("* ----- Asks (Vendas) -----\n");
+        asks.descendingMap().forEach((price, orderList) -> {  //inverte a ordem com "descendingMap" para mostrar o menor Asking Price no topo do book
+            System.out.printf("Preço: %d | Volume Total: %d | Ordens: %d%n", price, orderList.getTotalVolume(), orderList.size());
+        });
+
+        System.out.println("----------------------------------------------");
+        bids.forEach((price, orderList) -> {  //ordem natural para mostrar o maior Bidding Price no topo do book
+            System.out.printf("Preço: %d | Volume Total: %d | Ordens: %d%n", price, orderList.getTotalVolume(), orderList.size());
+        });
+        System.out.println("\n* ----- Bids (Compras) -----");
+
+
+        System.out.println("=======================================================\n");
+    }
+
+
 }
 
