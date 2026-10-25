@@ -44,12 +44,23 @@ public class TradingServer {  //classe servidor para receber conexões de client
                     if(parts[0].equalsIgnoreCase("CANCEL")){
                         long orderId = Long.parseLong(parts[1]);
                         boolean canceled = engine.cancelOrder(orderId);
-                        out.println("Order " + orderId + (canceled ? " cancelada com sucesso." : " não encontrada ou já executada."));
+                        out.println("Order " + orderId + (canceled ? " cancelled successfully." : " not found or already executed."));
                     } else if (parts[0].equalsIgnoreCase("BOOK")){
                         engine.printOrderBook();
-                        out.println("Livro de ordens impresso no terminal do servidor.");
+                        out.println("Order Book printed.");
+                    } else if (parts[0].equalsIgnoreCase("MODIFY")){
+                        //coleta o ID da ordem, o novo preço e a nova quantidade
+                        long oldOrderId = Long.parseLong(parts[1]);
+                        long newPrice = Long.parseLong(parts[2]);
+                        int newQty = Integer.parseInt(parts[3]);
+
+                        long newOrderId = idGenerator.getAndIncrement();   //gera um novo ID para a ordem modificada
+
+                        boolean modified = engine.modifyOrder(oldOrderId, newOrderId, newPrice, newQty);
+                        out.println("Order " + oldOrderId + (modified ? (" modified. New ID: " + newOrderId + " " + newQty + " @ " + newPrice) : " not found or already executed."));
+
                     } else {
-                        //protocolo: TYPE SIDE PRICE QUANTITY 
+                        //coleta os parâmetros da ordem (type, side, price, quantity)
                         enums.OrderType type = enums.OrderType.valueOf(parts[0].toUpperCase());
                         enums.Side side = enums.Side.valueOf(parts[1].toUpperCase());
                         long price;
@@ -67,7 +78,12 @@ public class TradingServer {  //classe servidor para receber conexões de client
                         long orderId = idGenerator.getAndIncrement();
 
                         engine.enqueue(orderId, price, qty, qty, side, type);
-                        out.println("Order " + orderId + " recebida e enviada para a fila de processamento.");
+                        
+                        if (type == enums.OrderType.LIMIT){
+                            out.println("Order created: " + side + " " + qty + " @ " + price + " " + orderId);
+                        } else if (type == enums.OrderType.MARKET){  //print é diferente para market orders por não possuirem preço definido
+                            out.println("Order created: " + side + " " + qty + " @ MARKET " + orderId);
+                        }
                     }
                 }
                 catch(Exception e){

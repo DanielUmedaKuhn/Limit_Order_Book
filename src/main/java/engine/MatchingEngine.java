@@ -199,4 +199,22 @@ public class MatchingEngine {
     public void printOrderBook(){
         this.book.printOrderBook();
     }
+
+    public boolean modifyOrder(long oldOrderId, long newOrderId, long newPrice, int newQuantity){
+        Order originalOrder = book.getOrder(oldOrderId);   //resgata a ordem original pelo ID
+        if (originalOrder == null){
+            return false;   //ordem não encontrada ou já executada
+        }
+
+        enums.Side originalSide = originalOrder.getSide();
+        enums.OrderType originalType = originalOrder.getType();
+
+        boolean canceled = cancelOrder(oldOrderId);   //cancela a ordem original
+        if(!canceled){
+            return false;
+        }
+
+        enqueue(newOrderId, newPrice, newQuantity, newQuantity, originalSide, originalType);   //cria uma nova ordem com um novo ID, preço e quantidade modificados
+        return true;
+    }
 }

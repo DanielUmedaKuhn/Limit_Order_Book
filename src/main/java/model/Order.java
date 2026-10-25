@@ -20,7 +20,7 @@ public class Order {
         this.type = type;
     }
 
-    //para poder inicializar a objecto pool
+    //para poder inicializar a object pool
     public Order(){
     }
 
@@ -46,6 +46,14 @@ public class Order {
         } else {
             throw new IllegalArgumentException("Quantidade negociada inválida ou superior ao saldo.");
         }
+    }
+
+    public Side getSide(){
+        return this.side;
+    }
+
+    public OrderType getType(){
+        return this.type;
     }
 
     public void reset (long newId, long newPrice, long newQty, Side newSide, OrderType newType) {

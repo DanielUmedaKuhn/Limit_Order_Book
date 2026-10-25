@@ -13,8 +13,9 @@ public class TradingClient {    //classe cliente para acessar o servidor
             System.out.println("Conectado ao Trading Server.");
             System.out.println("Para LIMIT: 'limit SIDE PRICE QTY' (ex: limit buy 100 10)");
             System.out.println("Para MARKET: 'market SIDE QTY' (ex: market buy 10)");
-            System.out.println("Para cancelar uma order, envie: cancel ID (Exemplo: cancel 16954203)");
-            System.out.println("Para ver o livro de ordens, envie: book");
+            System.out.println("Para MODIFICAR: 'modify ID NEW_PRICE NEW_QUANTITY' (ex: modify 16954203 105 15)");
+            System.out.println("Para CANCELAR: cancel ID (Exemplo: cancel 16954203)");
+            System.out.println("Para ver o livro de ordens: book");
             System.out.println("Digite 'sair' para encerrar.");
 
             while(true){
