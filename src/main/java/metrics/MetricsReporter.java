@@ -14,7 +14,7 @@ public class MetricsReporter implements Runnable{
 
                 long currentOrders  = MetricsRegistry.totalOrders.sum();
                 long totalInInterval = currentOrders - lastOrdersCount;
-                double ops = (double) totalInInterval / REPORT_INTERVAL_SEC;
+                double ops = (double) totalInInterval / REPORT_INTERVAL_SEC;  //ops = orders per second
                 lastOrdersCount = currentOrders;
 
                 List<Long> latencies = MetricsRegistry.getSnapshot();
@@ -25,6 +25,7 @@ public class MetricsReporter implements Runnable{
 
                 if(!latencies.isEmpty()) {
                     Collections.sort(latencies);
+                    //Calcula percentis e média
                     long p50 = latencies.get((int) (latencies.size() * 0.50));
                     long p95 = latencies.get((int) (latencies.size() * 0.95));
                     long p99 = latencies.get((int) (latencies.size() * 0.99));

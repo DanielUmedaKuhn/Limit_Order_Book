@@ -153,27 +153,30 @@ public class MatchingEngine {
                 break; //se o melhor preço não serve, nenhum servirá
             }
 
-            PriceLevelQueue ordersAtLevel = oppositeSide.get(bestOppositePrice);
+            PriceLevelQueue ordersAtLevel = oppositeSide.get(bestOppositePrice);   //pega a fila de ordens no melhor preço da side oposta
 
             while(!ordersAtLevel.isEmpty() && incoming.getQuantity() > 0){
-                Order restingOrder = ordersAtLevel.peekFirst();
+                Order restingOrder = ordersAtLevel.peekFirst();   //pega a primeira ordem da fila
 
-                if(restingOrder.getQuantity() <= 0){
+                if(restingOrder.getQuantity() <= 0){    //se a ordem estiver vazia, remove do livro e do mapa de IDs
                     ordersAtLevel.removeFirst();
                     book.removeOrderFromId(restingOrder.id);
                     continue;
                 }
 
-                int matchQuantity = Math.min(incoming.getQuantity(), restingOrder.getQuantity());
+                int matchQuantity = Math.min(incoming.getQuantity(), restingOrder.getQuantity());   //quantidade a ser negociada é o mínimo entre as duas ordens
 
-                Trade trade = createTrade(incoming, restingOrder, matchQuantity, bestOppositePrice);
+                Trade trade = createTrade(incoming, restingOrder, matchQuantity, bestOppositePrice);    //cria o objeto trade com comprador, vendedor, quantidade e preço
                 trades.add(trade);
 
-                dbWorker.enqueueTrade((byte) 2, trade.buyerId, trade.sellerId, trade.price, trade.quantity);
+                System.out.println("Trade, price: " + trade.price + ", qty: " + trade.quantity);
 
-                incoming.reduceQuantity(matchQuantity);;
-                restingOrder.reduceQuantity(matchQuantity);;
+                dbWorker.enqueueTrade((byte) 2, trade.buyerId, trade.sellerId, trade.price, trade.quantity);  //grava o trade no banco de dados
 
+                incoming.reduceQuantity(matchQuantity);     //reduz a quantidade da ordem que agrediu o mercado
+                restingOrder.reduceQuantity(matchQuantity); //reduz a quantidade da ordem que já estava no livro  
+
+                //grava a ordem que estava no livro no banco de dados, mesmo que tenha sido totalmente executada, para manter o histórico
                 dbWorker.enqueueOrder((byte) 1, restingOrder.id, restingOrder.price, restingOrder.getInitialQuantity(), restingOrder.getQuantity(), restingOrder.side == Side.BUY, restingOrder.type == OrderType.MARKET);
                 if(restingOrder.getQuantity() == 0){
                     ordersAtLevel.removeFirst();
@@ -181,8 +184,7 @@ public class MatchingEngine {
                 }
             }
             if(ordersAtLevel.isEmpty()){
-                oppositeSide.remove(bestOppositePrice);
-
+                oppositeSide.remove(bestOppositePrice);  //se a fila de ordens estiver vazia, remove do mapa de ordens
             }
         }
     }

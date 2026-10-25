@@ -27,7 +27,7 @@ public class TradingClient {    //classe cliente para acessar o servidor
                 }
 
                 out.println(command);
-                System.out.println("Resposta: " + in.readLine());
+                System.out.println("Response: " + in.readLine());
             }
         }
         catch(IOException e){

@@ -34,6 +34,8 @@ public class OrderBook {
         });
 
         System.out.println("----------------------------------------------");
+        System.out.println("              Spread: " + (asks.isEmpty() || bids.isEmpty() ? "N/A" : asks.firstKey() - bids.firstKey()));
+        System.out.println("----------------------------------------------");
         bids.forEach((price, orderList) -> {  //ordem natural para mostrar o maior Bidding Price no topo do book
             System.out.printf("Preço: %d | Volume Total: %d | Ordens: %d%n", price, orderList.getTotalVolume(), orderList.size());
         });
