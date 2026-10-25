@@ -51,7 +51,7 @@ public class TradingServer {  //classe servidor para receber conexões de client
                     } else if (parts[0].equalsIgnoreCase("MODIFY")){
                         //coleta o ID da ordem, o novo preço e a nova quantidade
                         long oldOrderId = Long.parseLong(parts[1]);
-                        long newPrice = Long.parseLong(parts[2]);
+                        long newPrice = Math.round(Double.parseDouble(parts[2]) * 100.0);  //multiplica por 100 para armazenar como inteiro e eliminar erro de arredondamento (ex: 100.50 -> 10050)
                         int newQty = Integer.parseInt(parts[3]);
 
                         long newOrderId = idGenerator.getAndIncrement();   //gera um novo ID para a ordem modificada
@@ -70,7 +70,7 @@ public class TradingServer {  //classe servidor para receber conexões de client
                             price = 0;
                             qty = Integer.parseInt(parts[2]);
                         } else {
-                            price = Long.parseLong(parts[2]);
+                            price = Math.round(Double.parseDouble(parts[2]) * 100.0);  //multiplica por 100 para armazenar como inteiro e eliminar erro de arredondamento (ex: 100.50 -> 10050)
                             qty = Integer.parseInt(parts[3]);
                         }
 
@@ -80,7 +80,7 @@ public class TradingServer {  //classe servidor para receber conexões de client
                         engine.enqueue(orderId, price, qty, qty, side, type);
                         
                         if (type == enums.OrderType.LIMIT){
-                            out.println("Order created: " + side + " " + qty + " @ " + price + " " + orderId);
+                            out.println("Order created: " + side + " " + qty + " @ " + price / 100.0 + " " + orderId);
                         } else if (type == enums.OrderType.MARKET){  //print é diferente para market orders por não possuirem preço definido
                             out.println("Order created: " + side + " " + qty + " @ MARKET " + orderId);
                         }

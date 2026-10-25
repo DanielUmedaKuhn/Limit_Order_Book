@@ -169,7 +169,7 @@ public class MatchingEngine {
                 Trade trade = createTrade(incoming, restingOrder, matchQuantity, bestOppositePrice);    //cria o objeto trade com comprador, vendedor, quantidade e preço
                 trades.add(trade);
 
-                System.out.println("Trade, price: " + trade.price + ", qty: " + trade.quantity);
+                System.out.println("Trade, price: " + trade.price / 100.0 + ", qty: " + trade.quantity);  //divide preço por 100 para mostrar o preço real, já que foi armazenado como inteiro
 
                 dbWorker.enqueueTrade((byte) 2, trade.buyerId, trade.sellerId, trade.price, trade.quantity);  //grava o trade no banco de dados
 
