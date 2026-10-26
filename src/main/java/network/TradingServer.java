@@ -45,7 +45,7 @@ public class TradingServer {  //classe servidor para receber conexões de client
                         long orderId = Long.parseLong(parts[1]);
                         boolean canceled = engine.cancelOrder(orderId);
                         out.println("Order " + orderId + (canceled ? " cancelled successfully." : " not found or already executed."));
-                    } else if (parts[0].equalsIgnoreCase("BOOK")){
+                    } else if (parts.length >= 2 && parts[0].equalsIgnoreCase("PRINT") && parts[1].equalsIgnoreCase("BOOK")){
                         engine.printOrderBook();
                         out.println("Order Book printed.");
                     } else if (parts[0].equalsIgnoreCase("MODIFY")){
@@ -57,8 +57,19 @@ public class TradingServer {  //classe servidor para receber conexões de client
                         long newOrderId = idGenerator.getAndIncrement();   //gera um novo ID para a ordem modificada
 
                         boolean modified = engine.modifyOrder(oldOrderId, newOrderId, newPrice, newQty);
-                        out.println("Order " + oldOrderId + (modified ? (" modified. New ID: " + newOrderId + " " + newQty + " @ " + newPrice) : " not found or already executed."));
+                        out.println("Order " + oldOrderId + (modified ? (" modified. New ID: " + newOrderId + " " + newQty + " @ " + newPrice / 100.0) : " not found or already executed."));
+                    } else if(parts[0].equalsIgnoreCase("PEG")){
+                        String reference = parts[1].toLowerCase();
+                        enums.Side side = enums.Side.valueOf(parts[2].toUpperCase());
+                        int qty = Integer.parseInt(parts[3]);
 
+                        if((reference.equals("bid") && side == enums.Side.SELL) || (reference.equals("offer") && side == enums.Side.BUY)){
+                            out.println("ERRO: Order rejected. 'Peg bid' must be BUY and 'Peg offer' must be SELL to not cross the spread.");
+                        } else {
+                            long orderId = idGenerator.getAndIncrement();  //gera um novo ID para a ordem pegged
+                            engine.enqueue(orderId, 0, qty, qty, side, enums.OrderType.PEGGED);
+                            out.println("Order created: pegged to " + reference + " " + side + " " + qty + " " + orderId);
+                        }
                     } else {
                         //coleta os parâmetros da ordem (type, side, price, quantity)
                         enums.OrderType type = enums.OrderType.valueOf(parts[0].toUpperCase());
@@ -66,7 +77,7 @@ public class TradingServer {  //classe servidor para receber conexões de client
                         long price;
                         int qty;
 
-                        if (type == enums.OrderType.MARKET){
+                        if (type == enums.OrderType.MARKET){  //para market e pegged orders, o preço não é necessário
                             price = 0;
                             qty = Integer.parseInt(parts[2]);
                         } else {
@@ -87,7 +98,7 @@ public class TradingServer {  //classe servidor para receber conexões de client
                     }
                 }
                 catch(Exception e){
-                    out.println("ERRO: Formato Inválido. Use limit SIDE PRICE QTY (ex: limit buy 100 10), market SIDE QTY (ex: market buy 10), cancel ID (ex: cancel 16954203) ou 'book' para imprimir o livro de ordens.");
+                    out.println("ERRO: Formato Inválido. Use: limit SIDE PRICE QTY (ex: limit buy 100 10), market SIDE QTY (ex: market buy 10), peg REFERENCE SIDE QTY (ex: peg bid buy 10 ou peg offer sell 10) cancel ID (ex: cancel 16954203), book para imprimir o livro de ordens.");
                 }
             }
         }

@@ -1,3 +1,3 @@
 package enums;
 
-public enum OrderType { LIMIT, MARKET }
+public enum OrderType { LIMIT, MARKET , PEGGED }

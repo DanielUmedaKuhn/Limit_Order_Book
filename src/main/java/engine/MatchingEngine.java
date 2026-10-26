@@ -17,6 +17,10 @@ public class MatchingEngine {
     private final AtomicLong producer = new AtomicLong();
     private final AtomicLong consumer = new AtomicLong();
 
+    //hashSet pois não precisa de ordenação, apenas de busca rápida
+    private final Set<Long> peggedBids = new HashSet<>(); 
+    private final Set<Long> peggedAsks = new HashSet<>(); 
+
     public MatchingEngine(){
         for (int i = 0; i < ringBuffer.length; i++) {
             ringBuffer[i] = new Order(); 
@@ -88,24 +92,81 @@ public class MatchingEngine {
         }
     }
 
+    private void updatePeggedOrders(Set<Long> peggedIds, long newPrice, Side side){
+        Iterator<Long> it = peggedIds.iterator();
+        while(it.hasNext()){  //itera sobre os IDs das ordens pegged enquanto houverem IDs
+            long id = it.next();
+            Order pOrder = book.getOrder(id);
+            //se a ordem foi cancelada ou totalmente executada, remove do rastreador
+            if(pOrder == null || pOrder.getQuantity() <= 0){
+                it.remove();
+                continue;
+            }
+
+            if (pOrder.price != newPrice){  //se o preço mudou, atualiza a ordem no livro
+                var sideMap = (side == Side.BUY) ? book.bids : book.asks;  //pega o mapa de ordens do lado correto
+                PriceLevelQueue queue = sideMap.get(pOrder.price);  //pega a fila de ordens no preço antigo
+                if (queue != null){
+                    queue.remove(pOrder);  //remove a ordem da fila
+                    if(queue.isEmpty()){
+                        sideMap.remove(pOrder.price);  //remove o nível de preço se a fila estiver vazia
+                    }
+                }
+
+                pOrder.price = newPrice;  //atualiza o preço da ordem
+                book.addOrder(pOrder);    //reinsere a ordem no livro
+
+                //envia a atualização assíncrona de preço para o banco de dados 
+                dbWorker.enqueueOrder((byte) 1, pOrder.id, pOrder.price, pOrder.getInitialQuantity(), pOrder.getQuantity(), side == Side.BUY, false);
+            }   
+        }
+    }
+
     public List<Trade> submitOrder(Order incoming) {
         long startTime = System.nanoTime();
     
         metrics.MetricsRegistry.totalOrders.increment();
-        dbWorker.enqueueOrder((byte) 0, incoming.id, incoming.price, incoming.getInitialQuantity(), incoming.getQuantity(), incoming.side == Side.BUY, incoming.type == OrderType.MARKET);  //incoming é uma referência
+        
+        //captura o melhor preçodo topo do livro para ordens pegged
+        long oldBestBid = book.bids.isEmpty() ? 0 : book.bids.firstKey();
+        long oldBestAsk = book.asks.isEmpty() ? 0 : book.asks.firstKey();
 
-        List<Trade> trades = new ArrayList<>();
+        if (incoming.type == OrderType.PEGGED){
+            if (incoming.side == Side.BUY){
+                incoming.price = oldBestBid;  //pega a melhor bid atual
+                peggedBids.add(incoming.id);
+            } else {
+                incoming.price = oldBestAsk;  //pega a melhor ask atual
+                peggedAsks.add(incoming.id);
+            }
+        }
+
+        //incoming é uma referência, envia a ordem para o banco de dados antes de tentar match nela (byte 0 = insert)
+        dbWorker.enqueueOrder((byte) 0, incoming.id, incoming.price, incoming.getInitialQuantity(), incoming.getQuantity(), incoming.side == Side.BUY, incoming.type == OrderType.MARKET);  
+
+        List<Trade> trades = new ArrayList<>();  //lista de trades que serão retornados para o servidor e enviados ao cliente
         if (incoming.side == Side.BUY) {
             match(incoming, book.asks, trades);
         } else {
             match(incoming, book.bids, trades);
         }
 
+        //envia a ordem para o banco de dados depois do match
         dbWorker.enqueueOrder((byte) 1, incoming.id, incoming.price, incoming.getInitialQuantity(), incoming.getQuantity(), incoming.side == Side.BUY, incoming.type == OrderType.MARKET);
 
-        //apenas orders limit com saldo vão para o livro, orders market não executadas são canceladas
-        if (incoming.getQuantity() > 0 && incoming.type ==  OrderType.LIMIT) {
+        //ordens limit e pegged não executadas totalmente também vão para o OrderBook
+        if (incoming.getQuantity() > 0 && (incoming.type == OrderType.LIMIT || incoming.type == OrderType.PEGGED)) {
             book.addOrder(incoming);
+        }
+
+        long newBestBid = book.bids.isEmpty() ? 0 : book.bids.firstKey();
+        long newBestAsk = book.asks.isEmpty() ? 0 : book.asks.firstKey();
+
+        if(newBestBid != oldBestBid && newBestBid != 0){
+            updatePeggedOrders(peggedBids, newBestBid, Side.BUY);
+        }
+        if(newBestAsk != oldBestAsk && newBestAsk != 0){
+            updatePeggedOrders(peggedAsks, newBestAsk, Side.SELL);
         }
 
         long endTime = System.nanoTime();
@@ -136,6 +197,8 @@ public class MatchingEngine {
 
         book.removeOrderFromId(orderId);  //libera memória ao remover do mapa de IDs
         order.setQuantity(0);
+
+        //atualiza a ordem no livro (byte 1 = update) e no banco de dados
         dbWorker.enqueueOrder((byte) 1, order.id, order.price, order.getInitialQuantity(), order.getQuantity(), order.side == Side.BUY, order.type == OrderType.MARKET);
         return true;
     }
@@ -170,13 +233,13 @@ public class MatchingEngine {
                 trades.add(trade);
 
                 System.out.println("Trade, price: " + trade.price / 100.0 + ", qty: " + trade.quantity);  //divide preço por 100 para mostrar o preço real, já que foi armazenado como inteiro
-
-                dbWorker.enqueueTrade((byte) 2, trade.buyerId, trade.sellerId, trade.price, trade.quantity);  //grava o trade no banco de dados
+                
+                dbWorker.enqueueTrade((byte) 2, trade.buyerId, trade.sellerId, trade.price, trade.quantity);  //grava o trade no banco de dados (byte 2 = trade)
 
                 incoming.reduceQuantity(matchQuantity);     //reduz a quantidade da ordem que agrediu o mercado
                 restingOrder.reduceQuantity(matchQuantity); //reduz a quantidade da ordem que já estava no livro  
 
-                //grava a ordem que estava no livro no banco de dados, mesmo que tenha sido totalmente executada, para manter o histórico
+                //atualiza a ordem no livro (byte 1 = update) e no banco de dados
                 dbWorker.enqueueOrder((byte) 1, restingOrder.id, restingOrder.price, restingOrder.getInitialQuantity(), restingOrder.getQuantity(), restingOrder.side == Side.BUY, restingOrder.type == OrderType.MARKET);
                 if(restingOrder.getQuantity() == 0){
                     ordersAtLevel.removeFirst();

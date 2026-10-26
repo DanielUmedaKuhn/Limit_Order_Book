@@ -1,5 +1,8 @@
 package engine;
+
 import model.Order;
+import java.util.ArrayList;
+import java.util.List;
 
 public class PriceLevelQueue{
     private Order head;
@@ -68,5 +71,15 @@ public void remove(Order order){
             current = current.next;
         }
         return volume;
+    }
+
+    public List<Order> getOrders(){  //retorna uma lista com todas as orders
+        List<Order> orders = new ArrayList<>();
+        Order current = head;  //pega a head da fila 
+        while (current != null){  //percorre a fila até o final, adicionando as ordens na lista
+            orders.add(current);
+            current = current.next;
+        }
+        return orders;
     }
 }

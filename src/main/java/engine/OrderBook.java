@@ -30,14 +30,20 @@ public class OrderBook {
         System.out.println("===================== Order Book =====================");
         System.out.println("* ----- Asks (Vendas) -----\n");
         asks.descendingMap().forEach((price, orderList) -> {  //inverte a ordem com "descendingMap" para mostrar o menor Asking Price no topo do book
-            System.out.printf("Preço: %.2f | Volume Total: %d | Ordens: %d%n", price / 100.0, orderList.getTotalVolume(), orderList.size()); //divide por 100 para mostrar o preço real, já que foi armazenado como inteiro
+            for(Order order : orderList.getOrders()){
+                System.out.printf("Preço: %.2f | Qtd: %d | ID: %d | Tipo: %s%n", 
+                                  price / 100.0, order.getQuantity(), order.id, order.getType());            
+            }
         });
 
         System.out.println("----------------------------------------------");
-        System.out.println("              Spread: " + (asks.isEmpty() || bids.isEmpty() ? "N/A" : asks.firstKey() - bids.firstKey()));
+        System.out.println("              Spread: " + (asks.isEmpty() || bids.isEmpty() ? "N/A" : (asks.firstKey() - bids.firstKey()) / 100.0));
         System.out.println("----------------------------------------------");
         bids.forEach((price, orderList) -> {  //ordem natural para mostrar o maior Bidding Price no topo do book
-            System.out.printf("Preço: %.2f | Volume Total: %d | Ordens: %d%n", price / 100.0, orderList.getTotalVolume(), orderList.size()); //divide por 100 para mostrar o preço real, já que foi armazenado como inteiro
+            for(Order order : orderList.getOrders()){
+                System.out.printf("Preço: %.2f | Qtd: %d | ID: %d | Tipo: %s%n", 
+                                  price / 100.0, order.getQuantity(), order.id, order.type);        
+            }
         });
         System.out.println("\n* ----- Bids (Compras) -----");
 
