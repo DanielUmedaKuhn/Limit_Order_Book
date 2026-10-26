@@ -179,29 +179,29 @@ public class MatchingEngine {
         return trades;
     }
 
-    public boolean cancelOrder(long orderId) {  //não precisa percorrer o livro todo, cancela direto pelo ID
+    public boolean cancelOrder(long orderId){
         Order order = book.getOrder(orderId);
-        if (order == null) {
-            return false;
+        if(order == null){
+            return false;   //ordem não encontrada ou já executada
         }
 
-        var sideMap = (order.side == Side.BUY) ? book.bids : book.asks;
-        PriceLevelQueue ordersAtPrice = sideMap.get(order.price);
+        var sideMap = (order.side == Side.BUY) ? book.bids : book.asks;   //pega o mapa de ordens da side correta
+        PriceLevelQueue ordersAtPrice = sideMap.get(order.price);   //pega a fila de ordens no preço da ordem
 
-        if (ordersAtPrice != null) {
-            ordersAtPrice.remove(order);  //remove da fila FIFO
-            if (ordersAtPrice.isEmpty()) {
-                sideMap.remove(order.price);
+        if(ordersAtPrice != null){
+            ordersAtPrice.remove(order);   //remove a ordem da fila FIFO que fica dentro daquele nível de preço, removendo do book
+            if(ordersAtPrice.isEmpty()){   //se a fila estiver vazia, remove o nível de preço do mapa
+                sideMap.remove(order.price);   
             }
         }
 
-        book.removeOrderFromId(orderId);  //libera memória ao remover do mapa de IDs
-        order.setQuantity(0);
-
-        //atualiza a ordem no livro (byte 1 = update) e no banco de dados
-        dbWorker.enqueueOrder((byte) 1, order.id, order.price, order.getInitialQuantity(), order.getQuantity(), order.side == Side.BUY, order.type == OrderType.MARKET);
+        book.removeOrderFromId(orderId);  //remove a ordem do mapa de IDs para liberar memória
+        
+        //byte 3 sinaliza cancelamento da ordem
+        dbWorker.enqueueOrder((byte) 3, order.id, order.price, order.getInitialQuantity(), order.getQuantity(), order.side == Side.BUY, order.type == OrderType.MARKET);  //envia a ordem cancelada para o banco de dados);
+        
         return true;
-    }
+    } 
 
     private void match(Order incoming, TreeMap<Long, PriceLevelQueue> oppositeSide, List<Trade> trades){
         //enquanto houver ordens do lado oposto e a ordem atual ainda tiver quantidade
@@ -281,5 +281,5 @@ public class MatchingEngine {
 
         enqueue(newOrderId, newPrice, newQuantity, newQuantity, originalSide, originalType);   //cria uma nova ordem com um novo ID, preço e quantidade modificados
         return true;
-    }
+    }  
 }

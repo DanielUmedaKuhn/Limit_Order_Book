@@ -96,6 +96,8 @@ public class PersistenceWorker implements Runnable{
                             orderDAO.addUpdateBatch(dbIds[index], dbQuantity[index]);
                         } else if (task == 2){
                             tradeDAO.addSaveBatch(tradeBuyerIds[index], tradeSellerIds[index], dbPrices[index], dbQuantity[index]);
+                        } else if (task == 3){
+                            orderDAO.cancelOrder(dbIds[index]);
                         }
                     } catch (Exception e){
                         System.err.println("Erro ao processar batch: " + e.getMessage());

@@ -68,7 +68,7 @@ public class OrderDAO {
 
     public List<Order> findAllOpen(){
         List<Order> openOrders = new ArrayList<>();
-        String sql = "SELECT * FROM orders WHERE status != 'FILLED'";
+        String sql = "SELECT * FROM orders WHERE status = 'OPEN' OR status = 'PARTIAL'";
 
         try(Connection conn = DatabaseConfig.getConnection();
             PreparedStatement pstmt = conn.prepareStatement(sql);
@@ -87,14 +87,14 @@ public class OrderDAO {
             }
         }
         catch (SQLException e){
-            System.err.println("DAO - Erro ao buscar orders abertas: " + e.getMessage());
+            System.err.println("DAO - Erro ao buscar ordens abertas: " + e.getMessage());
             e.printStackTrace();
         }
 
         return openOrders;
     }
 
-    //último id de order já salva no banco de dados
+    //último id de ordem já salva no banco de dados
     public long getLastOrderId(){
         String sql = "SELECT MAX(id) FROM orders";
         try(Connection conn = DatabaseConfig.getConnection();
@@ -106,7 +106,18 @@ public class OrderDAO {
         } catch (SQLException e){
             System.err.println("DAO - Erro ao buscar último id: " + e.getMessage());
         }
-        return 0;   //retorna 0 se nenhuma order for encontrada
+        return 0;   //retorna 0 se nenhuma ordem for encontrada
+    }
+
+    public void cancelOrder(long orderId){
+        String sql = "UPDATE orders SET status = 'CANCELLED' WHERE id = ?";
+        try(Connection conn = DatabaseConfig.getConnection();   //conecta ao banco de dados
+            PreparedStatement pstmt = conn.prepareStatement(sql)){
+                pstmt.setLong(1, orderId);   //seta o id da ordem
+                pstmt.executeUpdate();
+        } catch (SQLException e){
+                System.err.println("DAO - Erro ao marcar  ordem " + orderId + " como cancelada: " + e.getMessage());
+        }
     }
 }
 
