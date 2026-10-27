@@ -29,3 +29,14 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### Maven ###
+target/
+
+### Database ###
+*.db
+*.sqlite
+
+### IntelliJ IDEA (Arquivos Específicos do Projeto) ###
+*.iml
+.idea/
