@@ -29,7 +29,7 @@ public class OrderBook {
     public void printOrderBook(){
         System.out.println("===================== Order Book =====================");
         System.out.println("* ----- Asks (Vendas) -----\n");
-        asks.descendingMap().forEach((price, orderList) -> {  //inverte a ordem com "descendingMap" para mostrar o menor Asking Price no topo do book
+        asks.descendingMap().forEach((price, orderList) -> {  //para mostrar o maior Asking Price no topo do livro
             for(Order order : orderList.getOrders()){
                 System.out.printf("Preço: %.2f | Qtd: %d | ID: %d | Tipo: %s%n", 
                                   price / 100.0, order.getQuantity(), order.id, order.getType());            

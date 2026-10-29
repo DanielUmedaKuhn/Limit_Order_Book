@@ -3,11 +3,12 @@ import java.io.*;
 import java.net.*;
 import java.util.Scanner;
 
-public class TradingClient {    //classe cliente para acessar o servidor
+//classe cliente para acessar o servidor
+public class TradingClient {    
     public static void main(String[] args){
         try(Socket socket = new Socket("localhost", 8080);
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));     //leitura do servidor
             Scanner scanner = new Scanner(System.in)){
 
             System.out.println("Conectado ao Trading Server.");
@@ -23,7 +24,7 @@ public class TradingClient {    //classe cliente para acessar o servidor
                 System.out.print("> ");
                 String command = scanner.nextLine();
 
-                if(command.equalsIgnoreCase("sair")){
+                if(command.equalsIgnoreCase("sair")){   //comando para encerrar o cliente
                     break;
                 }
 

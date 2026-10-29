@@ -2,15 +2,16 @@ package metrics;
 import java.util.Collections;
 import java.util.List;
 
+//thread que reporta as metricas do sistema
 public class MetricsReporter implements Runnable{
     private long lastOrdersCount = 0;
-    private static final int REPORT_INTERVAL_SEC = 10;
+    private static final int REPORT_INTERVAL_SEC = 60;
 
     @Override
     public void run(){
         while(true){
             try{
-                Thread.sleep(REPORT_INTERVAL_SEC * 6000);  //reporta a cada 60 segundos
+                Thread.sleep(REPORT_INTERVAL_SEC * 1000);  //reporta a cada 60 segundos
 
                 long currentOrders  = MetricsRegistry.totalOrders.sum();
                 long totalInInterval = currentOrders - lastOrdersCount;

@@ -30,9 +30,6 @@ bin/
 ### Mac OS ###
 .DS_Store
 
-### Maven ###
-target/
-
 ### Database ###
 *.db
 *.sqlite

@@ -1,7 +1,8 @@
 package database;
 import java.util.concurrent.atomic.*;
+import enums.OrderType;
 
-public class PersistenceWorker implements Runnable{
+public class PersistenceWorker implements Runnable{   //thread de persistência para gravar ordens e trades no banco de dados
     private final OrderDAO orderDAO = new OrderDAO();
     private final TradeDAO tradeDAO = new TradeDAO();
 
@@ -11,19 +12,21 @@ public class PersistenceWorker implements Runnable{
     private final int[] dbInitialQuantity = new int[1024];
     private final int[] dbQuantity = new int[1024];
     private final boolean[] dbSide = new boolean[1024];
-    private final boolean[] dbType = new boolean[1024];
+    private final OrderType[] dbType = new OrderType[1024]; 
     
     //arrays da trade
     private final long[] tradeBuyerIds = new long[1024];
     private final long[] tradeSellerIds = new long[1024];
 
+    //guardam os tipos de tarefa a serem executadas
     private final byte[] dbTaskType = new byte[1024];
     private final AtomicIntegerArray ready = new AtomicIntegerArray(1024); 
 
     private final AtomicLong producer = new AtomicLong();
     private final AtomicLong consumer = new AtomicLong();
 
-    public void enqueueOrder(byte taskType, long id, long price, int initialQuantity, int quantity, boolean side, boolean type){
+    //ring buffer para gravar ordens e trades no banco de dados, evitando que a thread principal seja bloqueada
+    public void enqueueOrder(byte taskType, long id, long price, int initialQuantity, int quantity, boolean side, OrderType type){
         long currentProducer = producer.getAndIncrement();
 
         while(true){
@@ -48,6 +51,7 @@ public class PersistenceWorker implements Runnable{
         }
     }
     
+    //ring buffer para gravar trades no banco de dados (é o mesmo ring buffer usado para gravar ordens)
     public void enqueueTrade(byte taskType, long buyerId, long sellerId, long price, int quantity){
         long currentProducer = producer.getAndIncrement();
 
@@ -71,9 +75,10 @@ public class PersistenceWorker implements Runnable{
         }
     }
 
+    //loop infinito que processa as ordens e trades enfileirados, gravando-os no banco de dados em lotes
     @Override
     public void run(){
-        System.out.println("DB-WORKER - Thread de persistência iniciada.");
+        System.out.println("[DB-WORKER] - Thread de persistência iniciada.");
         while(true){
             long currentProducer = producer.get();
             long currentConsumer = consumer.get();
@@ -89,11 +94,12 @@ public class PersistenceWorker implements Runnable{
 
                     byte task = dbTaskType[index];
 
+                    //cada tipo de tarefa é processada de acordo com o tipo (gravação de ordem (0), atualização de ordem (1), gravação de trade (2) ou cancelamento de ordem (3))
                     try{
                         if (task == 0){
                             orderDAO.addSaveBatch(dbIds[index], dbPrices[index], dbInitialQuantity[index], dbQuantity[index], dbSide[index], dbType[index]);
                         } else if (task == 1){
-                            orderDAO.addUpdateBatch(dbIds[index], dbQuantity[index]);
+                            orderDAO.addUpdateBatch(dbIds[index], dbPrices[index],dbQuantity[index]);
                         } else if (task == 2){
                             tradeDAO.addSaveBatch(tradeBuyerIds[index], tradeSellerIds[index], dbPrices[index], dbQuantity[index]);
                         } else if (task == 3){

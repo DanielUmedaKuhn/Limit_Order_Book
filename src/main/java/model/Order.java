@@ -40,6 +40,7 @@ public class Order {
         this.initialQuantity = initialQuantity;
     }
 
+    //para reduzir a quantidade de uma ordem executada parcialmente
     public void reduceQuantity(int tradedQuantity) {
         if (tradedQuantity > 0 && tradedQuantity <= this.quantity) {
             this.quantity -= tradedQuantity;
@@ -56,11 +57,12 @@ public class Order {
         return this.type;
     }
 
-    public void reset (long newId, long newPrice, long newQty, Side newSide, OrderType newType) {
+    //limpa a ordem que é retirada da pool para receber os dados que estavam no DTO
+    public void reset(long newId, long newPrice, int newInitQty, int newQty, Side newSide, OrderType newType){
         this.id = newId;
         this.price = newPrice;
-        this.initialQuantity = (int)newQty;
-        this.quantity = (int)newQty;
+        this.setInitialQuantity(newInitQty);
+        this.setQuantity(newQty);
         this.side = newSide;
         this.type = newType;
         this.prev = null;

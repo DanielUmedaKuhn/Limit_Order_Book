@@ -22,7 +22,8 @@ public class TradeDAO {
         }
         
     }
-
+    
+    //adiciona os dados à fila para gravação
     public void addSaveBatch(long buyerId, long sellerId, long price, int quantity) throws SQLException{
         saveStmt.setLong(1, buyerId);
         saveStmt.setLong(2, sellerId);

@@ -10,9 +10,9 @@ public class DatabaseConfig{
         return DriverManager.getConnection(URL);
     }
 
-    public static void initializeDatabase(){
+    public static void initializeDatabase(){    //cria as tabelas caso não existam
         String sqlOrders = """
-                Create TabLE IF NOT EXISTS orders(
+                Create Table IF NOT EXISTS orders(
                     id BIGINT PRIMARY KEY,
                     price BIGINT NOT NULL,
                     initial_quantity INT NOT NULL,
@@ -23,7 +23,8 @@ public class DatabaseConfig{
                 );
                 """;
 
-        String sqlTrades = """
+        //tabela de trades, com referência às ordens compradoras e vendedoras
+        String sqlTrades = """ 
                 CREATE TABLE IF NOT EXISTS trades(
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     buyer_order_id BIGINT,
@@ -36,16 +37,16 @@ public class DatabaseConfig{
                 );
                 """;
 
-        try(Connection conn = getConnection();
+        try(Connection conn = getConnection();  //conecta ao banco de dados
             Statement stmt = conn.createStatement()){
 
             stmt.execute(sqlOrders);
             stmt.execute(sqlTrades);
 
-            System.out.println("[DATABASE] Tabelas orders e trades verificadas/criadas com sucesso");
+            System.out.println("[DATABASE] - Tabelas orders e trades verificadas/criadas com sucesso");
         }
         catch(SQLException e){
-            System.err.println("[DATABASE] Erro ao inicializar o banco: " + e.getMessage());
+            System.err.println("[DATABASE] - Erro ao inicializar o banco: " + e.getMessage());
             e.printStackTrace();
         }
     }

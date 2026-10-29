@@ -12,9 +12,4 @@ public class Trade {
         this.quantity = quantity;
         this.price = price;
     }
-
-    @Override
-    public String toString(){
-        return String.format("  [Sub-Order] Vendedor: %d | Comprador: %d | Quantidade: %d | Preço: %d,", sellerId, buyerId, quantity, price);
-    }
 }

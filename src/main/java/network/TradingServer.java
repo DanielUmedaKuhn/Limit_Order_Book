@@ -6,7 +6,8 @@ import java.io.*;
 import java.net.*;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class TradingServer {  //classe servidor para receber conexões de clientes
+//classe servidor para receber conexões de clientes
+public class TradingServer {  
     private final int port;
     private final MatchingEngine engine;
     private final ExecutorService threadPool = Executors.newFixedThreadPool(10);
@@ -17,22 +18,24 @@ public class TradingServer {  //classe servidor para receber conexões de client
         this.engine = engine;
     }
 
+    //inicia o servidor
     public void start(){
         try(ServerSocket serverSocket = new ServerSocket(port)){
-            System.out.println("[SERVER] Motor de Negociação rodando na porta "  + port);
+            System.out.println("[SERVER] - Motor de Negociação rodando na porta "  + port);
 
             while(true){
                 //servidor espera alguém conectar
                 Socket clientSocket = serverSocket.accept();
-                System.out.println("[SERVER] Novo cliente conectado: " + clientSocket.getInetAddress());
+                System.out.println("[SERVER] - Novo cliente conectado: " + clientSocket.getInetAddress());
                 threadPool.execute(() -> handleClient(clientSocket));  //joga handleClient para a pool de threads
             }
         }
         catch(IOException e){
-            System.out.println("[SERVER] Erro no servidor: " + e.getMessage());
+            System.out.println("[SERVER] - Erro no servidor: " + e.getMessage());
         }
     }
 
+    //trata as conexões de clientes, fazendo o processamento das orders
     private void handleClient(Socket socket){
         try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true)){
@@ -45,9 +48,11 @@ public class TradingServer {  //classe servidor para receber conexões de client
                         long orderId = Long.parseLong(parts[1]);
                         boolean canceled = engine.cancelOrder(orderId);
                         out.println("Order " + orderId + (canceled ? " cancelled successfully." : " not found or already executed."));
+
                     } else if (parts.length >= 2 && parts[0].equalsIgnoreCase("PRINT") && parts[1].equalsIgnoreCase("BOOK")){
                         engine.printOrderBook();
                         out.println("Order Book printed.");
+
                     } else if (parts[0].equalsIgnoreCase("MODIFY")){
                         //coleta o ID da ordem, o novo preço e a nova quantidade
                         long oldOrderId = Long.parseLong(parts[1]);
@@ -58,6 +63,7 @@ public class TradingServer {  //classe servidor para receber conexões de client
 
                         boolean modified = engine.modifyOrder(oldOrderId, newOrderId, newPrice, newQty);
                         out.println("Order " + oldOrderId + (modified ? (" modified. New ID: " + newOrderId + " " + newQty + " @ " + newPrice / 100.0) : " not found or already executed."));
+
                     } else if(parts[0].equalsIgnoreCase("PEG")){
                         String reference = parts[1].toLowerCase();
                         enums.Side side = enums.Side.valueOf(parts[2].toUpperCase());
@@ -98,7 +104,7 @@ public class TradingServer {  //classe servidor para receber conexões de client
                     }
                 }
                 catch(Exception e){
-                    out.println("ERRO: Formato Inválido. Use: limit SIDE PRICE QTY (ex: limit buy 100 10), market SIDE QTY (ex: market buy 10), peg REFERENCE SIDE QTY (ex: peg bid buy 10 ou peg offer sell 10) cancel ID (ex: cancel 16954203), book para imprimir o livro de ordens.");
+                    out.println("ERRO: Formato Inválido. Use: limit SIDE PRICE QTY (ex: limit buy 100 10), market SIDE QTY (ex: market buy 10), peg REFERENCE SIDE QTY (ex: peg bid buy 10 ou peg offer sell 10), modify ID NEW_PRICE NEW_QUANTITY (ex: modify 16954203 105 15) cancel ID (ex: cancel 16954203), book para imprimir o livro de ordens.");
                 }
             }
         }
