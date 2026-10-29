@@ -222,6 +222,10 @@ public class MatchingEngine {
             return false;   
         }
 
+        //salva o topo do livro antes do cancelamento
+        long oldBestBid = getBestReferencePrice(book.bids);
+        long oldBestAsk = getBestReferencePrice(book.asks);
+
         var sideMap = (order.side == Side.BUY) ? book.bids : book.asks;  
         PriceLevelQueue ordersAtPrice = sideMap.get(order.price);   
 
@@ -239,9 +243,35 @@ public class MatchingEngine {
         
         //ordem foi removida do livro, então volta para a pool
         returnOrder(order);
+
+        //salva o topo do livro depois do cancelamento
+        long newBestBid = getBestReferencePrice(book.bids);
+        long newBestAsk = getBestReferencePrice(book.asks);
+
+        if(newBestBid != oldBestBid && newBestBid != 0){
+            updatePeggedOrders(peggedBids, newBestBid, Side.BUY);
+        }
+        if(newBestAsk != oldBestAsk && newBestAsk != 0){
+            updatePeggedOrders(peggedAsks, newBestAsk, Side.SELL);
+        }
         
         return true;
     } 
+
+    //encontra o topo do livro ignorando ordens pegged (busca preço real de referência)
+    private long getBestReferencePrice(TreeMap<Long, PriceLevelQueue> sideMap){
+        for(java.util.Map.Entry<Long, PriceLevelQueue> entry : sideMap.entrySet()){  //itera sobre níveis de preço do livro
+            PriceLevelQueue queue = entry.getValue();                                //obtém fila de ordens naquele nível de preço
+            Order current = queue.peekFirst();  
+            while (current != null){
+                if(current.type == enums.OrderType.LIMIT){  //verifica se a ordem atual é limit (liquidez real)
+                    return entry.getKey();  
+                }
+                current = current.next;   //passa para a ordem seguinte
+            }
+        }
+        return 0; //nenhuma ordem limit no livro
+    }
 
     private void match(Order incoming, TreeMap<Long, PriceLevelQueue> oppositeSide, List<Trade> trades){
         while(!oppositeSide.isEmpty() && incoming.getQuantity() > 0){
