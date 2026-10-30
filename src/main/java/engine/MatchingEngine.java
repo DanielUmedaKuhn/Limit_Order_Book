@@ -165,10 +165,17 @@ public class MatchingEngine {
         Order incoming = borrowOrder();
         incoming.reset(cmd.id, cmd.price, cmd.initialQuantity, cmd.quantity, cmd.side, cmd.type);
         
+        List<Trade> trades = new ArrayList<>(); 
+
         long oldBestBid = getBestReferencePrice(book.bids);
         long oldBestAsk = getBestReferencePrice(book.asks);
 
         if (incoming.type == OrderType.PEGGED){
+            if((incoming.side == Side.BUY && oldBestBid == 0 || incoming.side == Side.SELL && oldBestAsk == 0)){
+                System.out.println("Erro: Ordem PEGGED rejeitada. Não há liquidez de referência no livro.");
+                returnOrder(incoming);  //devolve a ordem para a pool
+                return trades;          //aborta a execução e retorna uma lista vazia
+            }
             if (incoming.side == Side.BUY){
                 incoming.price = oldBestBid; 
                 peggedBids.add(incoming.id);
@@ -180,24 +187,31 @@ public class MatchingEngine {
 
         dbWorker.enqueueOrder((byte) 0, incoming.id, incoming.price, incoming.getInitialQuantity(), incoming.getQuantity(), incoming.side == Side.BUY, incoming.type);  
 
-        List<Trade> trades = new ArrayList<>(); 
         if (incoming.side == Side.BUY) {
             match(incoming, book.asks, trades);
         } else {
             match(incoming, book.bids, trades);
         }
 
-        dbWorker.enqueueOrder((byte) 1, incoming.id, incoming.price, incoming.getInitialQuantity(), incoming.getQuantity(), incoming.side == Side.BUY, incoming.type);
-
         if (incoming.getQuantity() > 0 && (incoming.type == OrderType.LIMIT || incoming.type == OrderType.PEGGED)) {
+            dbWorker.enqueueOrder((byte) 1, incoming.id, incoming.price, incoming.getInitialQuantity(), incoming.getQuantity(), incoming.side == Side.BUY, incoming.type);
             book.addOrder(incoming);
         } else {
+            //se a ordem for descartada mas ainda possuir saldo, é marcada como CANCELLED no banco de dados
+            if(incoming.getQuantity() == 0){
+                //se a quantidade da ordem zerou, a ordem foi executada integralmente
+                dbWorker.enqueueOrder((byte) 1, incoming.id, incoming.price, incoming.getInitialQuantity(), incoming.getQuantity(), incoming.side == Side.BUY, incoming.type);            
+            } else {
+                //se há saldo, mas foi descartada (Market), marcada como CANCELLED
+                dbWorker.enqueueOrder((byte) 3, incoming.id, incoming.price, incoming.getInitialQuantity(), incoming.getQuantity(), incoming.side == Side.BUY, incoming.type);
+            }
+
             //se a ordem já foi executada integralmente ou for Market, volta pra piscina
             returnOrder(incoming);
         }
 
         long newBestBid = getBestReferencePrice(book.bids);
-        long newBestAsk = getBestReferencePrice(book.bids);
+        long newBestAsk = getBestReferencePrice(book.asks);
 
         if(newBestBid != oldBestBid && newBestBid != 0){
             updatePeggedOrders(peggedBids, newBestBid, Side.BUY);
