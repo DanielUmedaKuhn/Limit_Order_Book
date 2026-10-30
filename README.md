@@ -22,7 +22,7 @@ Este projeto consiste em um motor de negociação (Matching Engine) de ultra-bai
     - **Rastreamento O(1):** Um `HashMap` mapeia os IDs das ordens, o que garante inserção/execução/cancelamento de uma ordem na fila em O(1).
 3. O cancelamento remove a ordem instantaneamente do motor em memória, mas submete uma instrução assíncrona que marca o status como `CANCELLED` no banco de dados, preservando a trilha de auditoria idêntica às bolsas reais.
 4. A modificação de ordens aplica o padrão *Cancel and Replace*: a ordem original é cancelada e perde a sua prioridade na fila, gerando uma nova ordem com ID e parâmetros atualizados no fim da fila do nível de preço escolhido.
-5. Ordens *Pegged* (peg bid buy / peg offer sell) atuam como *Liquidity Makers*, rastreando automaticamente o topo do livro de ofertas e se reposicionando sempre que o melhor preço do ativo sofre alteração.
+5. Ordens *Pegged* (peg bid buy / peg offer sell) atuam como *Liquidity Makers*, rastreando automaticamente o topo do livro de ofertas e se reposicionando sempre que o melhor preço do ativo sofre alteração. Caso a última ordem limit de um lado do livro seja cancelada ou executada e só sobre ordens pegged, é feito o Parking e elas são congeladas no último preço que ela rastreou, e reativadas quando é adicionada uma ordem limit novamente.
 
 ### Outras observações:
 1. Ordens limit que cruzem o spread (geram trades imediatamente) são preenchidas (tratadas como Takers), replicando o comportamento padrão da maioria das bolsas globais (como B3, NYSE, Nasdaq) para ordens limit.
