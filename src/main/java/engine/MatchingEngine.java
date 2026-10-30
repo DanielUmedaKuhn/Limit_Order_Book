@@ -165,8 +165,8 @@ public class MatchingEngine {
         Order incoming = borrowOrder();
         incoming.reset(cmd.id, cmd.price, cmd.initialQuantity, cmd.quantity, cmd.side, cmd.type);
         
-        long oldBestBid = book.bids.isEmpty() ? 0 : book.bids.firstKey();
-        long oldBestAsk = book.asks.isEmpty() ? 0 : book.asks.firstKey();
+        long oldBestBid = getBestReferencePrice(book.bids);
+        long oldBestAsk = getBestReferencePrice(book.asks);
 
         if (incoming.type == OrderType.PEGGED){
             if (incoming.side == Side.BUY){
@@ -196,8 +196,8 @@ public class MatchingEngine {
             returnOrder(incoming);
         }
 
-        long newBestBid = book.bids.isEmpty() ? 0 : book.bids.firstKey();
-        long newBestAsk = book.asks.isEmpty() ? 0 : book.asks.firstKey();
+        long newBestBid = getBestReferencePrice(book.bids);
+        long newBestAsk = getBestReferencePrice(book.bids);
 
         if(newBestBid != oldBestBid && newBestBid != 0){
             updatePeggedOrders(peggedBids, newBestBid, Side.BUY);
