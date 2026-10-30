@@ -82,22 +82,6 @@ Exemplos de payloads válidos:
  >`peg bid buy 200`\
  >`peg offer sell 30`
 
-
-
-## Instruções para Utilização
-
-### Passo 1: Iniciar o Servidor
-Execute o método principal da classe `app.Main`. O console indicará:
-1. Criação das tabelas no arquivo `trading_system.db`.
-2. Execução da rotina `rebuildBookFromDatabase` para recuperar o estado do livro e os rastreadores de preço.
-3. Inicialização das threads de Persistência e da Engine principal.
-4. Abertura da porta TCP 8080 para recebimento de ordens.
-
-### Passo 2: Iniciar o Cliente
-Execute a classe `network.TradingClient` (pode ser executada em múltiplas instâncias). O terminal abrirá um prompt para envio das ordens.
-
-
-
 ## Ciclo de Vida e Fluxo de uma Ordem (Memory Management)
 
 Para garantir máxima performance sem acionar o Garbage Collector, o ciclo de vida das ordens opera em duas trilhas de memória separadas:
@@ -135,6 +119,32 @@ Para garantir máxima performance sem acionar o Garbage Collector, o ciclo de vi
    - Para *Liquidity Takers* (Market ou Limit agressivas que cruzam o spread):
      ~70 a 120µs (isoladas) e ~40 a 70µs após o warm-up da Tiered Compilation.
 
+
+## Instruções para Utilização
+
+Este projeto utiliza o **Maven** para o gerenciamento de dependências. Não é necessária a instalação manual de bibliotecas externas (o driver do SQLite será baixado automaticamente). 
+
+Você pode executar o projeto de duas maneiras: através da sua IDE ou via Terminal.
+
+### Opção A: Execução via IDE
+1. Importe a pasta do projeto na sua IDE como um projeto Maven.
+2. Execute o método principal da classe servidora: `src/main/java/app/Main.java`.
+3. Em seguida, execute a classe cliente para poder interagir e enviar ordens: `src/main/java/network/TradingClient.java` (pode ser executada em múltiplas instâncias).
+
+### Opção B: Execução via Terminal (Maven)
+Certifique-se de ter o Maven instalado e execute os comandos na raiz do projeto:
+
+1. **Compilar o projeto:**
+   ```bash
+   mvn clean compile
+
+2. **Iniciar o Servidor:**
+   ```bash
+   mvn exec:java -Dexec.mainClass="app.Main"
+
+3. **Iniciar o Cliente (em um novo terminal):**
+   ```bash
+   mvn exec:java -Dexec.mainClass="network.TradingClient"
 ---
 
 Autor: [Daniel Kuhn](https://github.com/DanielUmedaKuhn)
