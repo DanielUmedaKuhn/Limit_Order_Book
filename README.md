@@ -66,8 +66,10 @@ O sistema auto-monitora sua integridade através de:
 
 - **Linguagem:** Java 17+
 - **Banco de Dados:** SQLite
+- **Gerenciamento e Build:** Maven
 - **Concorrência:** Ring Buffer, AtomicLong, Object Pooling e Thread Pools (sem uso de Locks bloqueantes).
 - **Rede:** Java Sockets (TCP)
+- **Testes:** JUnit 5 (Jupiter)
 
 ---
 
@@ -91,8 +93,6 @@ Para garantir máxima performance sem acionar o Garbage Collector, o ciclo de vi
 3. **Reciclagem dos DTOs:** O DTO no Ring Buffer perde utilidade imediatamente após a leitura e será sobrescrito sem Garbage Collection quando o ponteiro de rede fizer o wrap-around.
 4. **Matching:** A entidade `Order` real é cruzada instantaneamente no `OrderBook` na memória RAM e envia instruções assíncronas para o `PersistenceWorker`, e a gravação é feita em lotes no SQLite preservando os tipos originais.
 5. **Repouso no Livro ou Reciclagem:** Se a ordem possuir saldo (Maker), ela repousa passivamente no livro. Assim que for 100% preenchida ou cancelada, ela é removida da árvore de preços e devolvida à pool via `returnOrder()`, ficando pronta para a próxima conexão de rede sem gerar lixo.
-
-
 
 ## Histórico de Redução de Latência Ponta a Ponta
 
@@ -119,6 +119,8 @@ Para garantir máxima performance sem acionar o Garbage Collector, o ciclo de vi
    - Para *Liquidity Takers* (Market ou Limit agressivas que cruzam o spread):
      ~70 a 120µs (isoladas) e ~40 a 70µs após o warm-up da Tiered Compilation.
 
+    - Para modificação de ordes:
+      ~40 a 140µs (a depender de ordens pegged a serem alteradas como consequência)
 
 ## Instruções para Utilização
 
